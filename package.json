@@ -1,0 +1,16 @@
+{
+  "dependencies": {
+    "three": "^0.82.1"
+  },
+  "name": "three",
+  "version": "1.0.0",
+  "main": "app.js",
+  "license": "MIT",
+  "devDependencies": {
+    "typings": "^2.0.0"
+  },
+  "scripts": {
+    "dev": "webpack --debug --watch",
+    "server": "http-server public"
+  }
+}
