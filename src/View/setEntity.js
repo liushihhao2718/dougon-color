@@ -1,11 +1,17 @@
-const nomalLine = require('./normalLine.js');
 /**@type {THREE.Scene} scene */
 let scene;
-module.exports = function (_scene) {
+
+/** @callback 
+ *  @param {THREE.Group} group
+*/
+let _callback;
+export default function (_scene) {
 	scene = _scene;
 	setLight();
 	setPlane();
 	loadObj();
+
+	return { onObjectFileLoaded	}
 }
 
 function setLight() {
@@ -54,20 +60,10 @@ function loadObj() {
 		cube.castShadow = true;
 		scene.add( cube );
 		
-		controlNormalLine(cube.geometry);
+		_callback(cube.geometry);
 	});
 }
-/**@param {THREE.Group} lines*/
-function controlNormalLine(geometry) {
-	let cube = {
-		'show normal': false
-	}
-	const lines = nomalLine.drawNormalOn(geometry);
-	lines.visible = cube['show normal'];
-	scene.add(lines);
-	
-	let control = window.datgui.add(cube, 'show normal');
-	control.onFinishChange(value=>{
-		lines.visible = value;
-	});
+
+function onObjectFileLoaded(callback) {
+	_callback = callback;
 }
