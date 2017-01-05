@@ -80,18 +80,21 @@ function makeMesh(groupedFaces){
 	var unfold_face_geo = new THREE.Geometry();
 
 	groupedFaces.forEach(f =>{
-		unfold_face_geo.vertices.push(
-			geometry.vertices[f.a], 
-			geometry.vertices[f.b], 
-			geometry.vertices[f.c]
-		);
+		
+		for(let i=0 ;i < groupedFaces.length;i++){
+			unfold_face_geo.vertices.push(
+				geometry.vertices[f.a], 
+				geometry.vertices[f.b], 
+				geometry.vertices[f.c]
+			);
+			unfold_face_geo.faces.push(new THREE.Face3(i, i+1, i+2));
 
-		unfold_face_geo.faces.push(f);
+		}
 		
 	});
 	let n = groupedFaces[0].normal.normalize().multiplyScalar(0.1);
 	unfold_face_geo.translate(n.x, n.y, n.z);
-	var material = new THREE.MeshBasicMaterial({color: 0xff0000, side: THREE.DoubleSide});
+	var material = new THREE.MeshBasicMaterial({color: Math.random() * 0xffffff, side: THREE.DoubleSide});
 	let mesh = new THREE.Mesh( unfold_face_geo, material );
 
 	return mesh;

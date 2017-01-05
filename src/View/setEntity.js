@@ -1,3 +1,5 @@
+import 'lib/loader/ColladaLoader2.js';
+
 /**@type {THREE.Scene} scene */
 let scene;
 
@@ -8,9 +10,9 @@ let _callback;
 export default function (_scene) {
 	scene = _scene;
 	setLight();
-	setPlane();
-	loadObj();
-
+	// setPlane();
+	// loadObj();
+	loadDAE();
 	return { onObjectFileLoaded	}
 }
 
@@ -62,6 +64,29 @@ function loadObj() {
 		
 		_callback(cube.geometry);
 	});
+}
+
+function loadDAE(){
+		const loader = new THREE.ColladaLoader();
+		loader.load( 'models/HG.dae', function ( collada ) {
+			let dae;
+			dae = collada.scene.children[0];
+			dae.traverse( function ( child ) {
+				if ( child instanceof THREE.SkinnedMesh ) {
+					var animation = new THREE.Animation( child, child.geometry.animation );
+					animation.play();
+				}
+			} );
+			dae.name = 'HG';
+			dae.position.set(0,0,0);
+			// dae.geometry.scale(1,1,1);
+			dae.scale.x = dae.scale.y = dae.scale.z = 0.3;
+			dae.updateMatrix();
+			scene.add(dae);
+			const geometry = new THREE.Geometry().fromBufferGeometry(dae.children[0].geometry);
+
+			_callback(geometry);
+		} );
 }
 
 function onObjectFileLoaded(callback) {

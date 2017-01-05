@@ -51,7 +51,11 @@ export default class ObjectView extends GLRenderTemplate {
 		let unfoldFaces = Unfolder.unfold(geometry);
 		/**@todo send to unfold view */
 
-		unfoldFaces.forEach(m => this.scene.add(m));
+		unfoldFaces.forEach(m => {
+			m.applyMatrix(this.scene.getObjectByName('HG').children[0].matrix);
+			m.applyMatrix(this.scene.getObjectByName('HG').matrix);
+			this.scene.add(m);
+		});
 	}
 }
 

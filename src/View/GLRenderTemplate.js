@@ -1,5 +1,4 @@
 import 'lib/OrbitControls.js';
-import 'lib/loader/ColladaLoader2.js';
 import 'lib/loader/OBJLoader.js';
 import * as dat from 'lib/dat.gui.min';
 import Stats from 'lib/stats.min.js';
