@@ -202,7 +202,10 @@ class GLRenderTemplate {
 
 "use strict";
 /* harmony import */ var __WEBPACK_IMPORTED_MODULE_0__GLRenderTemplate__ = __webpack_require__(0);
-/* harmony import */ var __WEBPACK_IMPORTED_MODULE_1__setEntity__ = __webpack_require__(12);
+/* harmony import */ var __WEBPACK_IMPORTED_MODULE_1_Model_Unfolder__ = __webpack_require__(13);
+/* harmony import */ var __WEBPACK_IMPORTED_MODULE_2__setEntity__ = __webpack_require__(12);
+
+
 
 
 class ObjectView extends __WEBPACK_IMPORTED_MODULE_0__GLRenderTemplate__["a" /* default */] {
@@ -214,14 +217,17 @@ class ObjectView extends __WEBPACK_IMPORTED_MODULE_0__GLRenderTemplate__["a" /* 
 		return camera;
 	}
 	loadProps() {
-
-		__webpack_require__.i(__WEBPACK_IMPORTED_MODULE_1__setEntity__["a" /* default */])(this.scene).onObjectFileLoaded( geometry =>{
+		window.scene = this.scene;
+		__webpack_require__.i(__WEBPACK_IMPORTED_MODULE_2__setEntity__["a" /* default */])(this.scene).onObjectFileLoaded( geometry =>{
 			this.handleLoadObject(geometry);
 		});
 	}
 	handleLoadObject(geometry){
 		let cube = {
-			'show normal': false
+			'show normal': false,
+			'unfold':()=>{
+				this.unfold(geometry);
+			}
 		}
 		const nomalLine = __webpack_require__(9);
 
@@ -233,6 +239,8 @@ class ObjectView extends __WEBPACK_IMPORTED_MODULE_0__GLRenderTemplate__["a" /* 
 		control.onFinishChange(value=>{
 			lines.visible = value;
 		});
+
+		this.gui.add(cube, 'unfold');
 	}
 	setUI(){
 		super.setUI();
@@ -245,7 +253,28 @@ class ObjectView extends __WEBPACK_IMPORTED_MODULE_0__GLRenderTemplate__["a" /* 
 			right: '0px'
 		});
 	}
-	
+	unfold(geometry){
+		let unfoldFaces = __WEBPACK_IMPORTED_MODULE_1_Model_Unfolder__["a" /* default */].unfold(geometry);
+		/**@todo send to unfold view */
+
+		let face = unfoldFaces[0][0].clone();
+		// face.color = new THREE.Color(0xff0000);
+
+		var unfold_face_geo = new THREE.Geometry();
+		unfold_face_geo.vertices.push(
+			geometry.vertices[face.a], 
+			geometry.vertices[face.b], 
+			geometry.vertices[face.c]);
+			
+		unfold_face_geo.faces.push(face);
+		var material = new THREE.MeshBasicMaterial({color: 0xff0000});
+		let mesh = new THREE.Mesh( unfold_face_geo, material );
+		mesh.name = 'haha';
+		this.scene.add(mesh);
+
+		// geometry.verticesNeedUpdate = true;
+		// geometry.colorsNeedUpdate = true;
+	}
 }
 /* harmony export (immutable) */ exports["a"] = ObjectView;
 
@@ -3879,6 +3908,84 @@ function loadObj() {
 function onObjectFileLoaded(callback) {
 	_callback = callback;
 }
+
+/***/ },
+/* 13 */
+/***/ function(module, exports, __webpack_require__) {
+
+"use strict";
+/**
+ * @param {THREE.Geometry} geometry
+ */
+let scope = this;
+function unfold(geometry) {
+	scope.geometry = geometry;
+	let faces = geometry.faces;
+	
+	return groupBy(faces, (a, b)=> normalEqual(a, b) && connected(a, b) );
+}
+/**
+ * @param {(function(THREE.Face3,THREE.Face3))} cb
+ */
+function groupBy(array, cb){
+	let groupedFaces = [];
+
+	let a, b;
+	for( a in array) {
+		let subgroup = [ array[a] ];
+
+		for( b in array) {
+			if(array[a] === array[b]) continue;
+
+			if(cb(array[a],array[b])) subgroup.push( array[b] );
+		}
+
+		groupedFaces.push(subgroup);
+	}
+
+	return groupedFaces;
+}
+
+/**
+ * @param {THREE.Face3} face_a
+ * @param {THREE.Face3} face_aface_b
+ */
+function normalEqual( face_a, face_b ) {
+	let n_a = face_a.normal.normalize();
+	let n_b = face_b.normal.normalize()
+	
+	return n_a.equals( n_b );
+}
+
+/**
+ * @param {THREE.Face3} face_a
+ * @param {THREE.Face3} face_aface_b
+ */
+function connected( face_a, face_b ) {
+// connected triangles have 2 same point.
+
+	let a = [face_a.a, face_a.b, face_a.c];
+	let count = 0;
+	if(a.some(v => eq(v, face_b.a)) ) count++;
+	if(a.some(v => eq(v, face_b.b)) ) count++;
+	if(a.some(v => eq(v, face_b.c)) ) count++;
+
+	return (count === 2);
+}
+
+function eq(a,b){
+	let geometry = scope.geometry;
+
+/**
+ * @type {THREE.Vector3} vertex_1,vertex_2
+ */
+	let vertex_1 = geometry.vertices[a];
+	let vertex_2 = geometry.vertices[b];
+
+	return vertex_1.equals(vertex_2);
+}
+
+/* harmony default export */ exports["a"] = {unfold};
 
 /***/ }
 /******/ ]);
