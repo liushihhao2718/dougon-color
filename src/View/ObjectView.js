@@ -51,23 +51,7 @@ export default class ObjectView extends GLRenderTemplate {
 		let unfoldFaces = Unfolder.unfold(geometry);
 		/**@todo send to unfold view */
 
-		let face = unfoldFaces[0][0].clone();
-		// face.color = new THREE.Color(0xff0000);
-
-		var unfold_face_geo = new THREE.Geometry();
-		unfold_face_geo.vertices.push(
-			geometry.vertices[face.a], 
-			geometry.vertices[face.b], 
-			geometry.vertices[face.c]);
-			
-		unfold_face_geo.faces.push(face);
-		var material = new THREE.MeshBasicMaterial({color: 0xff0000});
-		let mesh = new THREE.Mesh( unfold_face_geo, material );
-		mesh.name = 'haha';
-		this.scene.add(mesh);
-
-		// geometry.verticesNeedUpdate = true;
-		// geometry.colorsNeedUpdate = true;
+		unfoldFaces.forEach(m => this.scene.add(m));
 	}
 }
 

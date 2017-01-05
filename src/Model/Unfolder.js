@@ -2,11 +2,16 @@
  * @param {THREE.Geometry} geometry
  */
 let scope = this;
+/**
+ * @return {Array<THREE.Mesh>}
+ */
 function unfold(geometry) {
 	scope.geometry = geometry;
 	let faces = geometry.faces;
-	
-	return groupBy(faces, (a, b)=> normalEqual(a, b) && connected(a, b) );
+	// [ [f,f...] , [f,f...] ]
+	let groupedFaces = groupBy(faces, (a, b)=> normalEqual(a, b) && connected(a, b) );
+	let meshies = groupedFaces.map(g => makeMesh(g) );
+	return meshies;
 }
 /**
  * @param {(function(THREE.Face3,THREE.Face3))} cb
@@ -69,4 +74,26 @@ function eq(a,b){
 	return vertex_1.equals(vertex_2);
 }
 
+
+function makeMesh(groupedFaces){
+	let geometry = scope.geometry;
+	var unfold_face_geo = new THREE.Geometry();
+
+	groupedFaces.forEach(f =>{
+		unfold_face_geo.vertices.push(
+			geometry.vertices[f.a], 
+			geometry.vertices[f.b], 
+			geometry.vertices[f.c]
+		);
+
+		unfold_face_geo.faces.push(f);
+		
+	});
+	let n = groupedFaces[0].normal.normalize().multiplyScalar(0.1);
+	unfold_face_geo.translate(n.x, n.y, n.z);
+	var material = new THREE.MeshBasicMaterial({color: 0xff0000, side: THREE.DoubleSide});
+	let mesh = new THREE.Mesh( unfold_face_geo, material );
+
+	return mesh;
+}
 export default {unfold};
