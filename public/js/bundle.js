@@ -140,7 +140,7 @@ class GLRenderTemplate {
 		let controls = new THREE.OrbitControls( this.camera, this.renderer.domElement );
 		controls.enableDamping = true;
 		controls.dampingFactor = 1;
-		controls.enableZoom = false;
+		// controls.enableZoom = false;
 
 		return controls;
 	}
@@ -369,22 +369,46 @@ function unfold(geometry) {
  */
 function groupBy(_array, cb){
 	let groupedFaces = [];
-	let set = new Set(_array);
-	for(let a of set) {
-		let subgroup = [ a ];
+	let map = {};
+	/**
+	 * input
+	 * 1 -> 2 -> 3
+	 * 
+	 * 4 -> 5
+	 * output
+	 * {
+	 * 	1 : [2],
+	 * 	2 : [3],
+	 * 	3 : [],
+	 *  4 : [5],
+	 *  5 : []
+	 * }
+	 * 
+	 */
+	let i, j;
+	for(i=0 ; i < _array.length ; i++) {
+		map[i] = [];
 
-		for(let b of set) {
-			if(a === b) continue;
+		for(j= i+1 ; j < _array.length ; j++) {
 
-			if(cb(a,b)) {
-				subgroup.push( b );
-				set.delete( b );
+			if( cb(_array[i], _array[j]) ) {
+				map[i].push(j);
 			}
 		}
-		groupedFaces.push(subgroup);
-		set.delete(a);
 	}
 
+	/**
+	 * result
+	 * {
+	 * 1:[2,3]
+	 * 4:[5]
+	 * }
+	 */
+
+	for( key in map) {
+		let subgroup = [];
+		
+	}
 	return groupedFaces;
 }
 
@@ -406,11 +430,11 @@ function normalEqual( face_a, face_b ) {
 function connected( face_a, face_b ) {
 // connected triangles have 2 same point.
 
-	let a = [face_a.a, face_a.b, face_a.c];
+	let a = [ face_a.a, face_a.b, face_a.c ];
 	let count = 0;
-	if(a.some(v => eq(v, face_b.a)) ) count++;
-	if(a.some(v => eq(v, face_b.b)) ) count++;
-	if(a.some(v => eq(v, face_b.c)) ) count++;
+	if( a.some(v => eq(v, face_b.a)) ) count++;
+	if( a.some(v => eq(v, face_b.b)) ) count++;
+	if( a.some(v => eq(v, face_b.c)) ) count++;
 
 	return (count === 2);
 }
@@ -424,9 +448,20 @@ function eq(a,b){
 	let vertex_1 = geometry.vertices[a];
 	let vertex_2 = geometry.vertices[b];
 
-	return vertex_1.equals(vertex_2);
-}
 
+	
+	return (
+		close(vertex_1.x, vertex_2.x)
+		&&close(vertex_1.y, vertex_2.y)
+		&&close(vertex_1.z, vertex_2.z)
+	);
+}
+/**
+ * @param {number} a,b
+ */
+function close(a,b){
+	return Math.abs(a - b) < 0.001;
+}
 /**
  * @returns {THREE.MeshBasicMaterial}
  */
@@ -439,14 +474,15 @@ function randomMaterial(){
 
 /**
  * @param {THREE.Face3[]} groupedFaces
- * @returns {THREE.Mesh}
+ * @return {THREE.Mesh}
  */
-
 function makeMesh(groupedFaces){
 	let geometry = scope.geometry;
 	let unfold_face_geo = new THREE.Geometry();
 
-	unfold_face_geo.vertices = groupedFaces.map(f=>[f.a,f.b,f.c]).reduce((a,b)=>a.concat(b)).map(v=>geometry.vertices[v]);
+	unfold_face_geo.vertices = groupedFaces.map(f=>[ f.a,f.b,f.c ])
+		.reduce((a,b) => a.concat(b) )
+		.map(v => geometry.vertices[v]);
 	unfold_face_geo.faces = groupedFaces.map((_,i)=>i*3).map(i=>new THREE.Face3(i, i+1, i+2));
 
 	let n = groupedFaces[0].normal.normalize().multiplyScalar(0.1);

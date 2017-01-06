@@ -59,7 +59,7 @@ export default class GLRenderTemplate {
 		let controls = new THREE.OrbitControls( this.camera, this.renderer.domElement );
 		controls.enableDamping = true;
 		controls.dampingFactor = 1;
-		controls.enableZoom = false;
+		// controls.enableZoom = false;
 
 		return controls;
 	}
