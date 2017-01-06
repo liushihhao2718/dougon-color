@@ -18,7 +18,7 @@ function unfold(geometry) {
  */
 function groupBy(_array, cb){
 	let groupedFaces = [];
-	let map = {};
+	let map = new Map();
 	/**
 	 * input
 	 * 1 -> 2 -> 3
@@ -36,16 +36,15 @@ function groupBy(_array, cb){
 	 */
 	let i, j;
 	for(i=0 ; i < _array.length ; i++) {
-		map[i] = [];
+		map.set(i, []);
 
 		for(j= i+1 ; j < _array.length ; j++) {
 
 			if( cb(_array[i], _array[j]) ) {
-				map[i].push(j);
+				map.get(i).push(j);
 			}
 		}
 	}
-
 	/**
 	 * result
 	 * {
@@ -53,10 +52,25 @@ function groupBy(_array, cb){
 	 * 4:[5]
 	 * }
 	 */
+	for(let key of map.keys() ){
+		let subgroup = findConnect( key );
+		groupedFaces.push(subgroup.map( i => _array[i]) );
+	}
+	
+	function findConnect(key){
+		let subgroup = [key];
+		try{
 
-	for( key in map) {
-		let subgroup = [];
-		
+			if( !map.has(key)) return [];
+			map.get(key).forEach( i => {
+				subgroup = subgroup.concat( findConnect(i) );
+			});
+			map.delete(key);
+		}catch(e){
+			console.log(e);
+			console.log(key);
+		}
+		return subgroup;
 	}
 	return groupedFaces;
 }
@@ -69,7 +83,7 @@ function normalEqual( face_a, face_b ) {
 	let n_a = face_a.normal.normalize();
 	let n_b = face_b.normal.normalize()
 	
-	return n_a.equals( n_b );
+	return eq(n_a, n_b, Math.PI * 10 / 180);
 }
 
 /**
@@ -81,35 +95,27 @@ function connected( face_a, face_b ) {
 
 	let a = [ face_a.a, face_a.b, face_a.c ];
 	let count = 0;
-	if( a.some(v => eq(v, face_b.a)) ) count++;
-	if( a.some(v => eq(v, face_b.b)) ) count++;
-	if( a.some(v => eq(v, face_b.c)) ) count++;
+	let list = scope.geometry.vertices;
+	if( a.some(v => eq( list[v], list[face_b.a] )  ) ) count++;
+	if( a.some(v => eq( list[v], list[face_b.b] ) ) ) count++;
+	if( a.some(v => eq( list[v], list[face_b.c] )) ) count++;
 
 	return (count === 2);
 }
 
-function eq(a,b){
-	let geometry = scope.geometry;
-
-/**
- * @type {THREE.Vector3} vertex_1,vertex_2
- */
-	let vertex_1 = geometry.vertices[a];
-	let vertex_2 = geometry.vertices[b];
-
-
+function eq(vertex_1,vertex_2, deviation = 0.1){
 	
 	return (
-		close(vertex_1.x, vertex_2.x)
-		&&close(vertex_1.y, vertex_2.y)
-		&&close(vertex_1.z, vertex_2.z)
+		close(vertex_1.x, vertex_2.x, deviation)
+		&&close(vertex_1.y, vertex_2.y, deviation)
+		&&close(vertex_1.z, vertex_2.z, deviation)
 	);
 }
 /**
  * @param {number} a,b
  */
-function close(a,b){
-	return Math.abs(a - b) < 0.001;
+function close(a,b, deviation){
+	return Math.abs(a - b) < deviation;
 }
 /**
  * @returns {THREE.MeshBasicMaterial}
