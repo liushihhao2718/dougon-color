@@ -11,8 +11,8 @@ export default function (_scene) {
 	scene = _scene;
 	setLight();
 	// setPlane();
-	// loadObj();
-	loadDAE();
+	loadObj();
+	// loadDAE();
 	return { onObjectFileLoaded	}
 }
 

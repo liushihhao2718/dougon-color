@@ -33,16 +33,18 @@
 /******/ 	// expose the module cache
 /******/ 	__webpack_require__.c = installedModules;
 /******/
-/******/ 	// identity function for calling harmory imports with the correct context
+/******/ 	// identity function for calling harmony imports with the correct context
 /******/ 	__webpack_require__.i = function(value) { return value; };
 /******/
-/******/ 	// define getter function for harmory exports
+/******/ 	// define getter function for harmony exports
 /******/ 	__webpack_require__.d = function(exports, name, getter) {
-/******/ 		Object.defineProperty(exports, name, {
-/******/ 			configurable: false,
-/******/ 			enumerable: true,
-/******/ 			get: getter
-/******/ 		});
+/******/ 		if(!__webpack_require__.o(exports, name)) {
+/******/ 			Object.defineProperty(exports, name, {
+/******/ 				configurable: false,
+/******/ 				enumerable: true,
+/******/ 				get: getter
+/******/ 			});
+/******/ 		}
 /******/ 	};
 /******/
 /******/ 	// getDefaultExport function for compatibility with non-harmony modules
@@ -255,8 +257,8 @@ class ObjectView extends __WEBPACK_IMPORTED_MODULE_0__GLRenderTemplate__["a" /* 
 		/**@todo send to unfold view */
 
 		unfoldFaces.forEach(m => {
-			m.applyMatrix(this.scene.getObjectByName('HG').children[0].matrix);
-			m.applyMatrix(this.scene.getObjectByName('HG').matrix);
+			// m.applyMatrix(this.scene.getObjectByName('HG').children[0].matrix);
+			// m.applyMatrix(this.scene.getObjectByName('HG').matrix);
 			this.scene.add(m);
 		});
 	}
@@ -365,20 +367,22 @@ function unfold(geometry) {
 /**
  * @param {(function(THREE.Face3,THREE.Face3))} cb
  */
-function groupBy(array, cb){
+function groupBy(_array, cb){
 	let groupedFaces = [];
+	let set = new Set(_array);
+	for(let a of set) {
+		let subgroup = [ a ];
 
-	let a, b;
-	for( a in array) {
-		let subgroup = [ array[a] ];
+		for(let b of set) {
+			if(a === b) continue;
 
-		for( b in array) {
-			if(array[a] === array[b]) continue;
-
-			if(cb(array[a],array[b])) subgroup.push( array[b] );
+			if(cb(a,b)) {
+				subgroup.push( b );
+				set.delete( b );
+			}
 		}
-
 		groupedFaces.push(subgroup);
+		set.delete(a);
 	}
 
 	return groupedFaces;
@@ -426,24 +430,26 @@ function eq(a,b){
 
 function makeMesh(groupedFaces){
 	let geometry = scope.geometry;
-	var unfold_face_geo = new THREE.Geometry();
+	let unfold_face_geo = new THREE.Geometry();
 
-	groupedFaces.forEach(f =>{
-		
-		for(let i=0 ;i < groupedFaces.length;i++){
-			unfold_face_geo.vertices.push(
-				geometry.vertices[f.a], 
-				geometry.vertices[f.b], 
-				geometry.vertices[f.c]
-			);
-			unfold_face_geo.faces.push(new THREE.Face3(i, i+1, i+2));
 
-		}
+	for(let i=0 ;i < groupedFaces.length;i++){
+		let f = groupedFaces[i];
+		unfold_face_geo.vertices.push(
+			geometry.vertices[f.a], 
+			geometry.vertices[f.b], 
+			geometry.vertices[f.c]
+		);
+		unfold_face_geo.faces.push(new THREE.Face3(3*i, 3*i+1, 3*i+2));
+
+	}
 		
-	});
 	let n = groupedFaces[0].normal.normalize().multiplyScalar(0.1);
 	unfold_face_geo.translate(n.x, n.y, n.z);
-	var material = new THREE.MeshBasicMaterial({color: Math.random() * 0xffffff, side: THREE.DoubleSide});
+	let material = new THREE.MeshBasicMaterial({
+		color: Math.random() * 0xffffff, 
+		side: THREE.DoubleSide
+	});
 	let mesh = new THREE.Mesh( unfold_face_geo, material );
 
 	return mesh;
@@ -470,8 +476,8 @@ let _callback;
 	scene = _scene;
 	setLight();
 	// setPlane();
-	// loadObj();
-	loadDAE();
+	loadObj();
+	// loadDAE();
 	return { onObjectFileLoaded	}
 };
 
@@ -4010,6 +4016,7 @@ module.exports = {drawNormalOn};
 /***/ function(module, exports, __webpack_require__) {
 
 "use strict";
+Object.defineProperty(exports, "__esModule", { value: true });
 /* harmony import */ var __WEBPACK_IMPORTED_MODULE_0__View_ObjectView__ = __webpack_require__(1);
 /* harmony import */ var __WEBPACK_IMPORTED_MODULE_1__View_UnfoldView__ = __webpack_require__(2);
 
