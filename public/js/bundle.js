@@ -432,16 +432,15 @@ function makeMesh(groupedFaces){
 	let geometry = scope.geometry;
 	let unfold_face_geo = new THREE.Geometry();
 
-
-	for(let i=0 ;i < groupedFaces.length;i++){
-		let f = groupedFaces[i];
+	let index=0;
+	for(let f of groupedFaces){
 		unfold_face_geo.vertices.push(
 			geometry.vertices[f.a], 
 			geometry.vertices[f.b], 
 			geometry.vertices[f.c]
 		);
-		unfold_face_geo.faces.push(new THREE.Face3(3*i, 3*i+1, 3*i+2));
-
+		unfold_face_geo.faces.push(new THREE.Face3(index, index+1, index+2));
+		index+=3;
 	}
 		
 	let n = groupedFaces[0].normal.normalize().multiplyScalar(0.1);

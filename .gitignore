@@ -2,5 +2,5 @@
 [Tt]humbs.db 
 node_modules/*
 *.log
-/public/js/bundle.js
-/public/js/bundle.js.map
+public/js/bundle.js
+public/js/bundle.js.map
