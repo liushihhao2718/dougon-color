@@ -428,51 +428,30 @@ function eq(a,b){
 }
 
 /**
+ * @returns {THREE.MeshBasicMaterial}
+ */
+function randomMaterial(){
+	return new THREE.MeshBasicMaterial({
+		color: Math.random() * 0xffffff, 
+		side: THREE.FrontSide
+	});
+}
+
+/**
  * @param {THREE.Face3[]} groupedFaces
+ * @returns {THREE.Mesh}
  */
 
 function makeMesh(groupedFaces){
 	let geometry = scope.geometry;
 	let unfold_face_geo = new THREE.Geometry();
 
-	let vertices = groupedFaces.map(f=>
-		[
-			geometry.vertices[f.a], 
-			geometry.vertices[f.b], 
-			geometry.vertices[f.c],
-			//f.normal.normalize().multiplyScalar(0.1)
-		]
-	)/*.map(f=>
-		[
-			f[0]+f[3],
-			f[1]+f[3],
-			f[2]+f[3],
-		]
-	)*/.reduce((a,b)=>
-		a.concat(b)
-	);
+	unfold_face_geo.vertices = groupedFaces.map(f=>[f.a,f.b,f.c]).reduce((a,b)=>a.concat(b)).map(v=>geometry.vertices[v]);
+	unfold_face_geo.faces = groupedFaces.map((_,i)=>i*3).map(i=>new THREE.Face3(i, i+1, i+2));
 
-	unfold_face_geo.vertices = vertices;
-	unfold_face_geo.faces=groupedFaces.map((_,i)=>new THREE.Face3(3*i, 3*i+1, 3*i+2));
-/*
-	let index=0;
-	for(let f of groupedFaces){
-		unfold_face_geo.vertices.push(
-			geometry.vertices[f.a], 
-			geometry.vertices[f.b], 
-			geometry.vertices[f.c]
-		);
-		unfold_face_geo.faces.push(new THREE.Face3(index, index+1, index+2));
-		index+=3;
-	}
-		*/
 	let n = groupedFaces[0].normal.normalize().multiplyScalar(0.1);
 	unfold_face_geo.translate(n.x, n.y, n.z);
-	let material = new THREE.MeshBasicMaterial({
-		color: Math.random() * 0xffffff, 
-		side: THREE.DoubleSide
-	});
-	let mesh = new THREE.Mesh( unfold_face_geo, material );
+	let mesh = new THREE.Mesh( unfold_face_geo, randomMaterial() );
 
 	return mesh;
 }
