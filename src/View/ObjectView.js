@@ -24,8 +24,8 @@ export default class ObjectView extends GLRenderTemplate {
 			}
 		}
 		const nomalLine = require('normalLine.js');
-
-		const lines = nomalLine.drawNormalOn(geometry);
+		const lines = nomalLine.drawNormalOn(this.scene, geometry);
+		lines.applyMatrix(this.scene.getObjectByName('HG').matrix);
 		lines.visible = cube['show normal'];
 		this.scene.add(lines);
 		
@@ -52,7 +52,6 @@ export default class ObjectView extends GLRenderTemplate {
 		/**@todo send to unfold view */
 
 		unfoldFaces.forEach(m => {
-			m.applyMatrix(this.scene.getObjectByName('HG').children[0].matrix);
 			m.applyMatrix(this.scene.getObjectByName('HG').matrix);
 			this.scene.add(m);
 		});

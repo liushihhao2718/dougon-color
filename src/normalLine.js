@@ -2,10 +2,10 @@
  * @param {THREE.Scene} _scene
  * @param {THREE.Geometry} object
  */
-function drawNormalOn(object) {
+function drawNormalOn(_scene, geometry) {
 	let group = new THREE.Group();
-	object.faces.forEach(f => {
-		group.add( lineoOnFace(f, object.vertices) );
+	geometry.faces.forEach(f => {
+		group.add( lineoOnFace(f, geometry.vertices) );
 	});
 	return group;
 }

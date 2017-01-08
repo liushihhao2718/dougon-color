@@ -53,7 +53,7 @@ function setPlane(){
 function loadObj() {
 	const loader = new THREE.OBJLoader();
 	loader.load( 'models/cube.obj', function ( group ) {
-		const green = new THREE.MeshPhongMaterial({color: 0x00ff00});
+		const green = new THREE.MeshPhongMaterial({color: 0x000000});
 		let c = group.children[0];
 		
 		const geometry = new THREE.Geometry().fromBufferGeometry(c.geometry);
@@ -67,26 +67,24 @@ function loadObj() {
 }
 
 function loadDAE(){
-		const loader = new THREE.ColladaLoader();
-		loader.load( 'models/HG.dae', function ( collada ) {
-			let dae;
-			dae = collada.scene.children[0];
-			dae.traverse( function ( child ) {
-				if ( child instanceof THREE.SkinnedMesh ) {
-					var animation = new THREE.Animation( child, child.geometry.animation );
-					animation.play();
-				}
-			} );
-			dae.name = 'HG';
-			dae.position.set(0,0,0);
-			// dae.geometry.scale(1,1,1);
-			dae.scale.x = dae.scale.y = dae.scale.z = 0.3;
-			dae.updateMatrix();
-			scene.add(dae);
-			const geometry = new THREE.Geometry().fromBufferGeometry(dae.children[0].geometry);
+	const loader = new THREE.ColladaLoader();
+	loader.load( 'models/HG.dae', function ( collada ) {
+		let dae = collada.scene.children[0].children[0];
+		dae.name = 'HG';
 
-			_callback(geometry);
-		} );
+		dae.matrix.set (
+            1,  0,  0,  0,
+            0,  0,  1,  0,
+            0,  -1, 0,  0,
+            0,  0,  0,  1
+        );
+
+		dae.updateMatrix();
+		scene.add(dae);
+		const geometry = new THREE.Geometry().fromBufferGeometry(dae.geometry);
+
+		_callback(geometry);
+	} );
 }
 
 function onObjectFileLoaded(callback) {

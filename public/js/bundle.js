@@ -227,8 +227,8 @@ class ObjectView extends __WEBPACK_IMPORTED_MODULE_0__GLRenderTemplate__["a" /* 
 			}
 		}
 		const nomalLine = __webpack_require__(10);
-
-		const lines = nomalLine.drawNormalOn(geometry);
+		const lines = nomalLine.drawNormalOn(this.scene, geometry);
+		lines.applyMatrix(this.scene.getObjectByName('HG').matrix);
 		lines.visible = cube['show normal'];
 		this.scene.add(lines);
 		
@@ -255,7 +255,6 @@ class ObjectView extends __WEBPACK_IMPORTED_MODULE_0__GLRenderTemplate__["a" /* 
 		/**@todo send to unfold view */
 
 		unfoldFaces.forEach(m => {
-			m.applyMatrix(this.scene.getObjectByName('HG').children[0].matrix);
 			m.applyMatrix(this.scene.getObjectByName('HG').matrix);
 			this.scene.add(m);
 		});
@@ -358,7 +357,7 @@ function unfold(geometry) {
 	scope.geometry = geometry;
 	let faces = geometry.faces;
 	// [ [f,f...] , [f,f...] ]
-	let groupedFaces = groupBy(faces, (a, b)=> normalEqual(a, b) && connected(a, b) );
+	let groupedFaces = groupBy(faces, (a, b)=> samePlane(a, b) );
 	let meshies = groupedFaces.map(g => makeMesh(g) );
 	return meshies;
 }
@@ -366,7 +365,13 @@ function unfold(geometry) {
  * @param {(function(THREE.Face3,THREE.Face3))} cb
  */
 function groupBy(_array, cb){
-	let groupedFaces = [];
+	let adj = makeAdjacencyList(_array, cb);
+	let groupedFaces = dfs(_array, adj);
+	
+	return groupedFaces;
+}
+
+function makeAdjacencyList(_array, cb){
 	let map = new Map();
 	/**
 	 * input
@@ -394,36 +399,48 @@ function groupBy(_array, cb){
 			}
 		}
 	}
+	return map;
+}
+
+function dfs(_array, adj){
+	let groupedFaces = [];
+	
 	/**
-	 * result
-	 * {
-	 * 1:[2,3]
-	 * 4:[5]
-	 * }
+	result
+	[  [1, 2, 3], [4, 5], [...], ...  ]
 	 */
-	for(let key of map.keys() ){
+	for(let key of adj.keys() ){
 		let subgroup = findConnect( key );
 		groupedFaces.push(subgroup.map( i => _array[i]) );
 	}
 	
 	function findConnect(key){
 		let subgroup = [key];
-		try{
+		
+		if( !adj.has(key)) return [];
 
-			if( !map.has(key)) return [];
-			map.get(key).forEach( i => {
-				subgroup = subgroup.concat( findConnect(i) );
-			});
-			map.delete(key);
-		}catch(e){
-			console.log(e);
-			console.log(key);
+		for(let i of adj.get(key)) {
+			subgroup = subgroup.concat( findConnect(i) );
 		}
+		adj.delete(key);
+		
 		return subgroup;
 	}
 	return groupedFaces;
 }
 
+function samePlane(face_a, face_b) {
+	// return normalEqual(face_a, face_b) && connected( face_a, face_b );
+	return normalEqual(face_a, face_b) && vertical( face_a.normal, face_a, face_b );
+}
+
+function vertical(n, face_a, face_b){
+	let p_a = scope.geometry.vertices[face_a.a];
+	let p_b = scope.geometry.vertices[face_b.a];
+	let v = p_a.clone().sub(p_b);
+
+	return n.dot( v ) < 0.001;
+}
 /**
  * @param {THREE.Face3} face_a
  * @param {THREE.Face3} face_aface_b
@@ -432,7 +449,7 @@ function normalEqual( face_a, face_b ) {
 	let n_a = face_a.normal.normalize();
 	let n_b = face_b.normal.normalize()
 	
-	return eq(n_a, n_b, Math.PI * 10 / 180);
+	return vector_equal(n_a, n_b, Math.PI * 10 / 180);
 }
 
 /**
@@ -445,14 +462,14 @@ function connected( face_a, face_b ) {
 	let a = [ face_a.a, face_a.b, face_a.c ];
 	let count = 0;
 	let list = scope.geometry.vertices;
-	if( a.some(v => eq( list[v], list[face_b.a] )  ) ) count++;
-	if( a.some(v => eq( list[v], list[face_b.b] ) ) ) count++;
-	if( a.some(v => eq( list[v], list[face_b.c] )) ) count++;
+	if( a.some(v => vector_equal( list[v], list[face_b.a] )  ) ) count++;
+	if( a.some(v => vector_equal( list[v], list[face_b.b] ) ) ) count++;
+	if( a.some(v => vector_equal( list[v], list[face_b.c] )) ) count++;
 
 	return (count === 2);
 }
 
-function eq(vertex_1,vertex_2, deviation = 0.1){
+function vector_equal(vertex_1,vertex_2, deviation = 0.1){
 	
 	return (
 		close(vertex_1.x, vertex_2.x, deviation)
@@ -559,7 +576,7 @@ function setPlane(){
 function loadObj() {
 	const loader = new THREE.OBJLoader();
 	loader.load( 'models/cube.obj', function ( group ) {
-		const green = new THREE.MeshPhongMaterial({color: 0x00ff00});
+		const green = new THREE.MeshPhongMaterial({color: 0x000000});
 		let c = group.children[0];
 		
 		const geometry = new THREE.Geometry().fromBufferGeometry(c.geometry);
@@ -573,26 +590,24 @@ function loadObj() {
 }
 
 function loadDAE(){
-		const loader = new THREE.ColladaLoader();
-		loader.load( 'models/HG.dae', function ( collada ) {
-			let dae;
-			dae = collada.scene.children[0];
-			dae.traverse( function ( child ) {
-				if ( child instanceof THREE.SkinnedMesh ) {
-					var animation = new THREE.Animation( child, child.geometry.animation );
-					animation.play();
-				}
-			} );
-			dae.name = 'HG';
-			dae.position.set(0,0,0);
-			// dae.geometry.scale(1,1,1);
-			dae.scale.x = dae.scale.y = dae.scale.z = 0.3;
-			dae.updateMatrix();
-			scene.add(dae);
-			const geometry = new THREE.Geometry().fromBufferGeometry(dae.children[0].geometry);
+	const loader = new THREE.ColladaLoader();
+	loader.load( 'models/HG.dae', function ( collada ) {
+		let dae = collada.scene.children[0].children[0];
+		dae.name = 'HG';
 
-			_callback(geometry);
-		} );
+		dae.matrix.set (
+            1,  0,  0,  0,
+            0,  0,  1,  0,
+            0,  -1, 0,  0,
+            0,  0,  0,  1
+        );
+
+		dae.updateMatrix();
+		scene.add(dae);
+		const geometry = new THREE.Geometry().fromBufferGeometry(dae.geometry);
+
+		_callback(geometry);
+	} );
 }
 
 function onObjectFileLoaded(callback) {
@@ -4020,10 +4035,10 @@ b.fillRect(d,m,n,p);b.fillStyle=l;b.globalAlpha=.9;b.fillRect(d,m,n,p);return{do
  * @param {THREE.Scene} _scene
  * @param {THREE.Geometry} object
  */
-function drawNormalOn(object) {
+function drawNormalOn(_scene, geometry) {
 	let group = new THREE.Group();
-	object.faces.forEach(f => {
-		group.add( lineoOnFace(f, object.vertices) );
+	geometry.faces.forEach(f => {
+		group.add( lineoOnFace(f, geometry.vertices) );
 	});
 	return group;
 }

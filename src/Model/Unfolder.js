@@ -9,7 +9,7 @@ function unfold(geometry) {
 	scope.geometry = geometry;
 	let faces = geometry.faces;
 	// [ [f,f...] , [f,f...] ]
-	let groupedFaces = groupBy(faces, (a, b)=> normalEqual(a, b) && connected(a, b) );
+	let groupedFaces = groupBy(faces, (a, b)=> samePlane(a, b) );
 	let meshies = groupedFaces.map(g => makeMesh(g) );
 	return meshies;
 }
@@ -17,7 +17,13 @@ function unfold(geometry) {
  * @param {(function(THREE.Face3,THREE.Face3))} cb
  */
 function groupBy(_array, cb){
-	let groupedFaces = [];
+	let adj = makeAdjacencyList(_array, cb);
+	let groupedFaces = dfs(_array, adj);
+	
+	return groupedFaces;
+}
+
+function makeAdjacencyList(_array, cb){
 	let map = new Map();
 	/**
 	 * input
@@ -45,36 +51,48 @@ function groupBy(_array, cb){
 			}
 		}
 	}
+	return map;
+}
+
+function dfs(_array, adj){
+	let groupedFaces = [];
+	
 	/**
-	 * result
-	 * {
-	 * 1:[2,3]
-	 * 4:[5]
-	 * }
+	result
+	[  [1, 2, 3], [4, 5], [...], ...  ]
 	 */
-	for(let key of map.keys() ){
+	for(let key of adj.keys() ){
 		let subgroup = findConnect( key );
 		groupedFaces.push(subgroup.map( i => _array[i]) );
 	}
 	
 	function findConnect(key){
 		let subgroup = [key];
-		try{
+		
+		if( !adj.has(key)) return [];
 
-			if( !map.has(key)) return [];
-			map.get(key).forEach( i => {
-				subgroup = subgroup.concat( findConnect(i) );
-			});
-			map.delete(key);
-		}catch(e){
-			console.log(e);
-			console.log(key);
+		for(let i of adj.get(key)) {
+			subgroup = subgroup.concat( findConnect(i) );
 		}
+		adj.delete(key);
+		
 		return subgroup;
 	}
 	return groupedFaces;
 }
 
+function samePlane(face_a, face_b) {
+	// return normalEqual(face_a, face_b) && connected( face_a, face_b );
+	return normalEqual(face_a, face_b) && vertical( face_a.normal, face_a, face_b );
+}
+
+function vertical(n, face_a, face_b){
+	let p_a = scope.geometry.vertices[face_a.a];
+	let p_b = scope.geometry.vertices[face_b.a];
+	let v = p_a.clone().sub(p_b);
+
+	return n.dot( v ) < 0.001;
+}
 /**
  * @param {THREE.Face3} face_a
  * @param {THREE.Face3} face_aface_b
@@ -83,7 +101,7 @@ function normalEqual( face_a, face_b ) {
 	let n_a = face_a.normal.normalize();
 	let n_b = face_b.normal.normalize()
 	
-	return eq(n_a, n_b, Math.PI * 10 / 180);
+	return vector_equal(n_a, n_b, Math.PI * 10 / 180);
 }
 
 /**
@@ -96,14 +114,14 @@ function connected( face_a, face_b ) {
 	let a = [ face_a.a, face_a.b, face_a.c ];
 	let count = 0;
 	let list = scope.geometry.vertices;
-	if( a.some(v => eq( list[v], list[face_b.a] )  ) ) count++;
-	if( a.some(v => eq( list[v], list[face_b.b] ) ) ) count++;
-	if( a.some(v => eq( list[v], list[face_b.c] )) ) count++;
+	if( a.some(v => vector_equal( list[v], list[face_b.a] )  ) ) count++;
+	if( a.some(v => vector_equal( list[v], list[face_b.b] ) ) ) count++;
+	if( a.some(v => vector_equal( list[v], list[face_b.c] )) ) count++;
 
 	return (count === 2);
 }
 
-function eq(vertex_1,vertex_2, deviation = 0.1){
+function vector_equal(vertex_1,vertex_2, deviation = 0.1){
 	
 	return (
 		close(vertex_1.x, vertex_2.x, deviation)
