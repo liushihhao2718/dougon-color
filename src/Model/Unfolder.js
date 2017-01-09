@@ -82,8 +82,8 @@ function dfs(_array, adj){
 }
 
 function samePlane(face_a, face_b) {
-	// return normalEqual(face_a, face_b) && connected( face_a, face_b );
-	return normalEqual(face_a, face_b) && vertical( face_a.normal, face_a, face_b );
+	return normalEqual(face_a, face_b) && connected( face_a, face_b );
+	// return normalEqual(face_a, face_b) && vertical( face_a.normal, face_a, face_b );
 }
 
 function vertical(n, face_a, face_b){
@@ -101,7 +101,7 @@ function normalEqual( face_a, face_b ) {
 	let n_a = face_a.normal.normalize();
 	let n_b = face_b.normal.normalize()
 	
-	return vector_equal(n_a, n_b, Math.PI * 10 / 180);
+	return vector_equal(n_a, n_b, Math.PI * 0.1 / 180);
 }
 
 /**
@@ -109,16 +109,17 @@ function normalEqual( face_a, face_b ) {
  * @param {THREE.Face3} face_aface_b
  */
 function connected( face_a, face_b ) {
-// connected triangles have 2 same point.
-
+	// connected triangles have 2 same point.
 	let a = [ face_a.a, face_a.b, face_a.c ];
+	let b = [ face_b.a, face_b.b, face_b.c ];
 	let count = 0;
 	let list = scope.geometry.vertices;
-	if( a.some(v => vector_equal( list[v], list[face_b.a] )  ) ) count++;
-	if( a.some(v => vector_equal( list[v], list[face_b.b] ) ) ) count++;
-	if( a.some(v => vector_equal( list[v], list[face_b.c] )) ) count++;
 
-	return (count === 2);
+	for(let v of a) {
+		for(let u of b)
+			if( vector_equal( list[v], list[u] )) count++;
+	}
+	return (count > 1);
 }
 
 function vector_equal(vertex_1,vertex_2, deviation = 0.1){

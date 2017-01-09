@@ -1,9 +1,14 @@
 import GLRenderTemplate from './GLRenderTemplate';
 import Unfolder from 'Model/Unfolder';
-import loadPredefined from './setEntity';
+import loadPredefined from 'Model/setEntity';
+import nomalLine from 'Model/normalLine';
 
 export default class ObjectView extends GLRenderTemplate {
-	
+	constructor() {
+		super();
+		this.selectableObjects = [];
+	}
+	// inhirtance method 
 	setCamera() {
 		let camera = new THREE.PerspectiveCamera( 70, this.width / this.height, 1, 2000 );
 		camera.position.set(5,5,5);
@@ -23,8 +28,7 @@ export default class ObjectView extends GLRenderTemplate {
 				this.unfold( object );
 			}
 		}
-		const nomalLine = require('normalLine.js');
-		const lines = nomalLine.drawNormalOn(this.scene, object.geometry);
+		const lines = nomalLine(this.scene, object.geometry);
 		lines.applyMatrix( object.matrix );
 		lines.visible = cube['show normal'];
 		this.scene.add(lines);
@@ -47,14 +51,20 @@ export default class ObjectView extends GLRenderTemplate {
 			right: '0px'
 		});
 	}
+
+	// not inhirtance method 
 	unfold(object){
 		let unfoldFaces = Unfolder.unfold(object.geometry);
 		/**@todo send to unfold view */
+		let group = new THREE.Group();
+		group.name = 'unfold';
 
 		unfoldFaces.forEach(m => {
 			m.applyMatrix( object.matrix );
-			this.scene.add(m);
+			group.add(m);
 		});
+		this.scene.add( group );
 	}
+
 }
 

@@ -2,7 +2,7 @@
  * @param {THREE.Scene} _scene
  * @param {THREE.Geometry} object
  */
-function drawNormalOn(_scene, geometry) {
+export default function drawNormalOn(_scene, geometry) {
 	let group = new THREE.Group();
 	geometry.faces.forEach(f => {
 		group.add( lineoOnFace(f, geometry.vertices) );
@@ -31,4 +31,3 @@ function lineoOnFace(f, vertices){
 	const line = new THREE.LineSegments( geometry, material );
 	return line;
 }
-module.exports = {drawNormalOn};

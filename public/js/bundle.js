@@ -202,13 +202,19 @@ class GLRenderTemplate {
 "use strict";
 /* harmony import */ var __WEBPACK_IMPORTED_MODULE_0__GLRenderTemplate__ = __webpack_require__(0);
 /* harmony import */ var __WEBPACK_IMPORTED_MODULE_1_Model_Unfolder__ = __webpack_require__(3);
-/* harmony import */ var __WEBPACK_IMPORTED_MODULE_2__setEntity__ = __webpack_require__(4);
+/* harmony import */ var __WEBPACK_IMPORTED_MODULE_2_Model_setEntity__ = __webpack_require__(13);
+/* harmony import */ var __WEBPACK_IMPORTED_MODULE_3_Model_normalLine__ = __webpack_require__(12);
+
 
 
 
 
 class ObjectView extends __WEBPACK_IMPORTED_MODULE_0__GLRenderTemplate__["a" /* default */] {
-	
+	constructor() {
+		super();
+		this.selectableObjects = [];
+	}
+	// inhirtance method 
 	setCamera() {
 		let camera = new THREE.PerspectiveCamera( 70, this.width / this.height, 1, 2000 );
 		camera.position.set(5,5,5);
@@ -217,7 +223,7 @@ class ObjectView extends __WEBPACK_IMPORTED_MODULE_0__GLRenderTemplate__["a" /* 
 	}
 	loadProps() {
 		window.scene = this.scene;
-		__webpack_require__.i(__WEBPACK_IMPORTED_MODULE_2__setEntity__["a" /* default */])(this.scene).onObjectFileLoaded( geometry =>{
+		__webpack_require__.i(__WEBPACK_IMPORTED_MODULE_2_Model_setEntity__["a" /* default */])(this.scene).onObjectFileLoaded( geometry =>{
 			this.handleLoadObject(geometry);
 		});
 	}
@@ -228,8 +234,7 @@ class ObjectView extends __WEBPACK_IMPORTED_MODULE_0__GLRenderTemplate__["a" /* 
 				this.unfold( object );
 			}
 		}
-		const nomalLine = __webpack_require__(10);
-		const lines = nomalLine.drawNormalOn(this.scene, object.geometry);
+		const lines = __webpack_require__.i(__WEBPACK_IMPORTED_MODULE_3_Model_normalLine__["a" /* default */])(this.scene, object.geometry);
 		lines.applyMatrix( object.matrix );
 		lines.visible = cube['show normal'];
 		this.scene.add(lines);
@@ -252,15 +257,21 @@ class ObjectView extends __WEBPACK_IMPORTED_MODULE_0__GLRenderTemplate__["a" /* 
 			right: '0px'
 		});
 	}
+
+	// not inhirtance method 
 	unfold(object){
 		let unfoldFaces = __WEBPACK_IMPORTED_MODULE_1_Model_Unfolder__["a" /* default */].unfold(object.geometry);
 		/**@todo send to unfold view */
+		let group = new THREE.Group();
+		group.name = 'unfold';
 
 		unfoldFaces.forEach(m => {
 			m.applyMatrix( object.matrix );
-			this.scene.add(m);
+			group.add(m);
 		});
+		this.scene.add( group );
 	}
+
 }
 /* harmony export (immutable) */ exports["a"] = ObjectView;
 
@@ -432,8 +443,8 @@ function dfs(_array, adj){
 }
 
 function samePlane(face_a, face_b) {
-	// return normalEqual(face_a, face_b) && connected( face_a, face_b );
-	return normalEqual(face_a, face_b) && vertical( face_a.normal, face_a, face_b );
+	return normalEqual(face_a, face_b) && connected( face_a, face_b );
+	// return normalEqual(face_a, face_b) && vertical( face_a.normal, face_a, face_b );
 }
 
 function vertical(n, face_a, face_b){
@@ -451,7 +462,7 @@ function normalEqual( face_a, face_b ) {
 	let n_a = face_a.normal.normalize();
 	let n_b = face_b.normal.normalize()
 	
-	return vector_equal(n_a, n_b, Math.PI * 10 / 180);
+	return vector_equal(n_a, n_b, Math.PI * 0.1 / 180);
 }
 
 /**
@@ -459,16 +470,17 @@ function normalEqual( face_a, face_b ) {
  * @param {THREE.Face3} face_aface_b
  */
 function connected( face_a, face_b ) {
-// connected triangles have 2 same point.
-
+	// connected triangles have 2 same point.
 	let a = [ face_a.a, face_a.b, face_a.c ];
+	let b = [ face_b.a, face_b.b, face_b.c ];
 	let count = 0;
 	let list = scope.geometry.vertices;
-	if( a.some(v => vector_equal( list[v], list[face_b.a] )  ) ) count++;
-	if( a.some(v => vector_equal( list[v], list[face_b.b] ) ) ) count++;
-	if( a.some(v => vector_equal( list[v], list[face_b.c] )) ) count++;
 
-	return (count === 2);
+	for(let v of a) {
+		for(let u of b)
+			if( vector_equal( list[v], list[u] )) count++;
+	}
+	return (count > 1);
 }
 
 function vector_equal(vertex_1,vertex_2, deviation = 0.1){
@@ -517,76 +529,7 @@ function makeMesh(groupedFaces){
 /* harmony default export */ exports["a"] = {unfold};
 
 /***/ },
-/* 4 */
-/***/ function(module, exports, __webpack_require__) {
-
-"use strict";
-/* harmony import */ var __WEBPACK_IMPORTED_MODULE_0_lib_loader_ColladaLoader2_js__ = __webpack_require__(7);
-/* harmony import */ var __WEBPACK_IMPORTED_MODULE_0_lib_loader_ColladaLoader2_js___default = __webpack_require__.n(__WEBPACK_IMPORTED_MODULE_0_lib_loader_ColladaLoader2_js__);
-
-
-/**@type {THREE.Scene} scene */
-let scene;
-
-/** @callback 
- *  @param {THREE.Group} group
-*/
-let _callback;
-/* harmony default export */ exports["a"] = function (_scene) {
-	scene = _scene;
-	setLight();
-
-	loadDAE();
-	return { onObjectFileLoaded	}
-};
-
-function setLight() {
-	var ambient = new THREE.AmbientLight( 0xa0a0a0 );
-
-	var directionalLight = new THREE.DirectionalLight( 0xeeeedd );
-	directionalLight.position.set( 5, 1, 1 );
-	directionalLight.castShadow = true;
-
-	var pointLight = new THREE.PointLight( 0xccffcc );
-	pointLight.position.set( 1, 1, 5 );
-	pointLight.castShadow = true;
-
-	const lightGroup = new THREE.Group();
-	lightGroup.name = 'lights';
-	lightGroup.add(ambient);
-	lightGroup.add(directionalLight);
-	lightGroup.add(pointLight);
-
-	scene.add(lightGroup);
-}
-
-function loadDAE(){
-	const loader = new THREE.ColladaLoader();
-	loader.load( 'models/LG.dae', function ( collada ) {
-		let dae = collada.scene.children[0].children[0];
-		// dae.name = 'HG';
-
-		dae.matrix.set (
-            1,  0,  0,  0,
-            0,  0,  1,  0,
-            0,  -1, 0,  0,
-            0,  0,  0,  1
-        );
-
-		dae.updateMatrix();
-		scene.add(dae);
-		const geometry = new THREE.Geometry().fromBufferGeometry(dae.geometry);
-		
-		dae.geometry = geometry;
-		_callback(dae);
-	} );
-}
-
-function onObjectFileLoaded(callback) {
-	_callback = callback;
-}
-
-/***/ },
+/* 4 */,
 /* 5 */
 /***/ function(module, exports) {
 
@@ -4000,9 +3943,35 @@ b.fillRect(d,m,n,p);b.fillStyle=l;b.globalAlpha=.9;b.fillRect(d,m,n,p);return{do
 
 
 /***/ },
-/* 10 */
-/***/ function(module, exports) {
+/* 10 */,
+/* 11 */
+/***/ function(module, exports, __webpack_require__) {
 
+"use strict";
+Object.defineProperty(exports, "__esModule", { value: true });
+/* harmony import */ var __WEBPACK_IMPORTED_MODULE_0__View_ObjectView__ = __webpack_require__(1);
+/* harmony import */ var __WEBPACK_IMPORTED_MODULE_1__View_UnfoldView__ = __webpack_require__(2);
+
+
+
+init();
+function init(){
+	let model_view = new __WEBPACK_IMPORTED_MODULE_0__View_ObjectView__["a" /* default */]();
+	model_view.appendTo(document.getElementById('model_view'));
+	model_view.animate();
+
+
+	let texture_View = new __WEBPACK_IMPORTED_MODULE_1__View_UnfoldView__["a" /* default */]();
+	texture_View.appendTo(document.getElementById('unfold_view'));
+	texture_View.animate();
+}
+
+/***/ },
+/* 12 */
+/***/ function(module, exports, __webpack_require__) {
+
+"use strict";
+/* harmony export (immutable) */ exports["a"] = drawNormalOn;
 /**
  * @param {THREE.Scene} _scene
  * @param {THREE.Geometry} object
@@ -4036,30 +4005,75 @@ function lineoOnFace(f, vertices){
 	const line = new THREE.LineSegments( geometry, material );
 	return line;
 }
-module.exports = {drawNormalOn};
-
 
 /***/ },
-/* 11 */
+/* 13 */
 /***/ function(module, exports, __webpack_require__) {
 
 "use strict";
-Object.defineProperty(exports, "__esModule", { value: true });
-/* harmony import */ var __WEBPACK_IMPORTED_MODULE_0__View_ObjectView__ = __webpack_require__(1);
-/* harmony import */ var __WEBPACK_IMPORTED_MODULE_1__View_UnfoldView__ = __webpack_require__(2);
+/* harmony import */ var __WEBPACK_IMPORTED_MODULE_0_lib_loader_ColladaLoader2_js__ = __webpack_require__(7);
+/* harmony import */ var __WEBPACK_IMPORTED_MODULE_0_lib_loader_ColladaLoader2_js___default = __webpack_require__.n(__WEBPACK_IMPORTED_MODULE_0_lib_loader_ColladaLoader2_js__);
 
 
+/**@type {THREE.Scene} scene */
+let scene;
 
-init();
-function init(){
-	let model_view = new __WEBPACK_IMPORTED_MODULE_0__View_ObjectView__["a" /* default */]();
-	model_view.appendTo(document.getElementById('model_view'));
-	model_view.animate();
+/** @callback 
+ *  @param {THREE.Group} group
+*/
+let _callback;
+/* harmony default export */ exports["a"] = function (_scene) {
+	scene = _scene;
+	setLight();
 
+	loadDAE();
+	return { onObjectFileLoaded	}
+};
 
-	let texture_View = new __WEBPACK_IMPORTED_MODULE_1__View_UnfoldView__["a" /* default */]();
-	texture_View.appendTo(document.getElementById('unfold_view'));
-	texture_View.animate();
+function setLight() {
+	var ambient = new THREE.AmbientLight( 0xa0a0a0 );
+
+	var directionalLight = new THREE.DirectionalLight( 0xeeeedd );
+	directionalLight.position.set( 5, 1, 1 );
+	directionalLight.castShadow = true;
+
+	var pointLight = new THREE.PointLight( 0xccffcc );
+	pointLight.position.set( 1, 1, 5 );
+	pointLight.castShadow = true;
+
+	const lightGroup = new THREE.Group();
+	lightGroup.name = 'lights';
+	lightGroup.add(ambient);
+	lightGroup.add(directionalLight);
+	lightGroup.add(pointLight);
+
+	scene.add(lightGroup);
+}
+
+function loadDAE(){
+	const loader = new THREE.ColladaLoader();
+	loader.load( 'models/LG.dae', function ( collada ) {
+		//collada -> scene -> sketchup -> mesh instance
+		let dae = collada.scene.children[0].children[0];
+
+		dae.matrix.set (
+            1,  0,  0,  0,
+            0,  0,  1,  0,
+            0,  -1, 0,  0,
+            0,  0,  0,  1
+        );
+
+		dae.updateMatrix();
+		scene.add(dae);
+		const geometry = new THREE.Geometry().fromBufferGeometry(dae.geometry);
+		
+		dae.geometry = geometry;
+		_callback(dae);
+	} );
+}
+
+function onObjectFileLoaded(callback) {
+	_callback = callback;
 }
 
 /***/ }
