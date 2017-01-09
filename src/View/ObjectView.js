@@ -16,16 +16,16 @@ export default class ObjectView extends GLRenderTemplate {
 			this.handleLoadObject(geometry);
 		});
 	}
-	handleLoadObject(geometry){
+	handleLoadObject(object){
 		let cube = {
 			'show normal': false,
 			'unfold':()=>{
-				this.unfold(geometry);
+				this.unfold( object );
 			}
 		}
 		const nomalLine = require('normalLine.js');
-		const lines = nomalLine.drawNormalOn(this.scene, geometry);
-		lines.applyMatrix(this.scene.getObjectByName('HG').matrix);
+		const lines = nomalLine.drawNormalOn(this.scene, object.geometry);
+		lines.applyMatrix( object.matrix );
 		lines.visible = cube['show normal'];
 		this.scene.add(lines);
 		
@@ -47,12 +47,12 @@ export default class ObjectView extends GLRenderTemplate {
 			right: '0px'
 		});
 	}
-	unfold(geometry){
-		let unfoldFaces = Unfolder.unfold(geometry);
+	unfold(object){
+		let unfoldFaces = Unfolder.unfold(object.geometry);
 		/**@todo send to unfold view */
 
 		unfoldFaces.forEach(m => {
-			m.applyMatrix(this.scene.getObjectByName('HG').matrix);
+			m.applyMatrix( object.matrix );
 			this.scene.add(m);
 		});
 	}

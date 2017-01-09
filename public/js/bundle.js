@@ -33,16 +33,18 @@
 /******/ 	// expose the module cache
 /******/ 	__webpack_require__.c = installedModules;
 /******/
-/******/ 	// identity function for calling harmory imports with the correct context
+/******/ 	// identity function for calling harmony imports with the correct context
 /******/ 	__webpack_require__.i = function(value) { return value; };
 /******/
-/******/ 	// define getter function for harmory exports
+/******/ 	// define getter function for harmony exports
 /******/ 	__webpack_require__.d = function(exports, name, getter) {
-/******/ 		Object.defineProperty(exports, name, {
-/******/ 			configurable: false,
-/******/ 			enumerable: true,
-/******/ 			get: getter
-/******/ 		});
+/******/ 		if(!__webpack_require__.o(exports, name)) {
+/******/ 			Object.defineProperty(exports, name, {
+/******/ 				configurable: false,
+/******/ 				enumerable: true,
+/******/ 				get: getter
+/******/ 			});
+/******/ 		}
 /******/ 	};
 /******/
 /******/ 	// getDefaultExport function for compatibility with non-harmony modules
@@ -219,16 +221,16 @@ class ObjectView extends __WEBPACK_IMPORTED_MODULE_0__GLRenderTemplate__["a" /* 
 			this.handleLoadObject(geometry);
 		});
 	}
-	handleLoadObject(geometry){
+	handleLoadObject(object){
 		let cube = {
 			'show normal': false,
 			'unfold':()=>{
-				this.unfold(geometry);
+				this.unfold( object );
 			}
 		}
 		const nomalLine = __webpack_require__(10);
-		const lines = nomalLine.drawNormalOn(this.scene, geometry);
-		lines.applyMatrix(this.scene.getObjectByName('HG').matrix);
+		const lines = nomalLine.drawNormalOn(this.scene, object.geometry);
+		lines.applyMatrix( object.matrix );
 		lines.visible = cube['show normal'];
 		this.scene.add(lines);
 		
@@ -250,12 +252,12 @@ class ObjectView extends __WEBPACK_IMPORTED_MODULE_0__GLRenderTemplate__["a" /* 
 			right: '0px'
 		});
 	}
-	unfold(geometry){
-		let unfoldFaces = __WEBPACK_IMPORTED_MODULE_1_Model_Unfolder__["a" /* default */].unfold(geometry);
+	unfold(object){
+		let unfoldFaces = __WEBPACK_IMPORTED_MODULE_1_Model_Unfolder__["a" /* default */].unfold(object.geometry);
 		/**@todo send to unfold view */
 
 		unfoldFaces.forEach(m => {
-			m.applyMatrix(this.scene.getObjectByName('HG').matrix);
+			m.applyMatrix( object.matrix );
 			this.scene.add(m);
 		});
 	}
@@ -533,8 +535,7 @@ let _callback;
 /* harmony default export */ exports["a"] = function (_scene) {
 	scene = _scene;
 	setLight();
-	// setPlane();
-	// loadObj();
+
 	loadDAE();
 	return { onObjectFileLoaded	}
 };
@@ -558,42 +559,12 @@ function setLight() {
 
 	scene.add(lightGroup);
 }
-function setPlane(){
-	// create the ground plane
-	var planeGeometry = new THREE.PlaneGeometry(60, 40, 1, 1);
-	var planeMaterial = new THREE.MeshLambertMaterial({color: 0xffffff});
-	var plane = new THREE.Mesh(planeGeometry, planeMaterial);
-	plane.name = 'plane';
-	plane.receiveShadow = true;
-	// rotate and position the plane
-	plane.rotation.x = -0.5 * Math.PI;
-	plane.position.x = 0;
-	plane.position.y = 0;
-	plane.position.z = 0;
-	// add the plane to the scene
-	scene.add(plane);
-}
-function loadObj() {
-	const loader = new THREE.OBJLoader();
-	loader.load( 'models/cube.obj', function ( group ) {
-		const green = new THREE.MeshPhongMaterial({color: 0x000000});
-		let c = group.children[0];
-		
-		const geometry = new THREE.Geometry().fromBufferGeometry(c.geometry);
-		let cube = new THREE.Mesh(geometry, green);
-		cube.name = 'cube'
-		cube.castShadow = true;
-		scene.add( cube );
-		
-		_callback(cube.geometry);
-	});
-}
 
 function loadDAE(){
 	const loader = new THREE.ColladaLoader();
-	loader.load( 'models/HG.dae', function ( collada ) {
+	loader.load( 'models/LG.dae', function ( collada ) {
 		let dae = collada.scene.children[0].children[0];
-		dae.name = 'HG';
+		// dae.name = 'HG';
 
 		dae.matrix.set (
             1,  0,  0,  0,
@@ -605,8 +576,9 @@ function loadDAE(){
 		dae.updateMatrix();
 		scene.add(dae);
 		const geometry = new THREE.Geometry().fromBufferGeometry(dae.geometry);
-
-		_callback(geometry);
+		
+		dae.geometry = geometry;
+		_callback(dae);
 	} );
 }
 
@@ -4072,6 +4044,7 @@ module.exports = {drawNormalOn};
 /***/ function(module, exports, __webpack_require__) {
 
 "use strict";
+Object.defineProperty(exports, "__esModule", { value: true });
 /* harmony import */ var __WEBPACK_IMPORTED_MODULE_0__View_ObjectView__ = __webpack_require__(1);
 /* harmony import */ var __WEBPACK_IMPORTED_MODULE_1__View_UnfoldView__ = __webpack_require__(2);
 
