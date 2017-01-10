@@ -1,0 +1,17 @@
+body {
+    overflow : hidden;
+    margin: 0;
+}
+#model_view {
+    position: relative;
+    margin: 0;
+    overflow : hidden;
+}
+
+.Grid {
+    display: flex;
+}
+
+.Grid-cell {
+    flex: 1;
+}

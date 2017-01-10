@@ -37,7 +37,7 @@ function setLight() {
 
 function loadDAE(){
 	const loader = new THREE.ColladaLoader();
-	loader.load( 'models/LG.dae', function ( collada ) {
+	loader.load( 'models/HG.dae', function ( collada ) {
 		//collada -> scene -> sketchup -> mesh instance
 		let dae = collada.scene.children[0].children[0];
 
