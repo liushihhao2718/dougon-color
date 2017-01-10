@@ -1,4 +1,5 @@
 import GLRenderTemplate from './GLRenderTemplate';
+import SelectControl from 'Control/SelectControl';
 import Unfolder from 'Model/Unfolder';
 import loadPredefined from 'Model/setEntity';
 import nomalLine from 'Model/normalLine';
@@ -7,6 +8,7 @@ export default class ObjectView extends GLRenderTemplate {
 	constructor() {
 		super();
 		this.selectableObjects = [];
+		this.selectControl = this.setSelectControl();
 	}
 	// inhirtance method 
 	setCamera() {
@@ -52,8 +54,14 @@ export default class ObjectView extends GLRenderTemplate {
 		});
 	}
 
-	// not inhirtance method 
+	// not inhirtance method
+	setSelectControl() {
+		let control = new SelectControl(this);
+		this.controls.push( control );
+		return control;
+	}
 	unfold(object){
+		object.geometry.computeFaceNormals();
 		let unfoldFaces = Unfolder.unfold(object.geometry);
 		/**@todo send to unfold view */
 		let group = new THREE.Group();
@@ -62,6 +70,8 @@ export default class ObjectView extends GLRenderTemplate {
 		unfoldFaces.forEach(m => {
 			m.applyMatrix( object.matrix );
 			group.add(m);
+			this.selectableObjects.push( m );
+
 		});
 		this.scene.add( group );
 	}

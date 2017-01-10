@@ -8,7 +8,7 @@ import Stats from 'lib/stats.min.js';
  * @prop {THREE.Camera} camera
  * @prop {THREE.Scene} scene
  * @prop {THREE.WebGLRenderer} renderer
- * @prop {THREE.Controls} controls
+ * @prop { Array.<THREE.Controls> } controls
  * @prop {number} width
  * @prop {number} height
  * @prop {domElement} parent
@@ -19,15 +19,15 @@ import Stats from 'lib/stats.min.js';
  */
 export default class GLRenderTemplate {
 	constructor() {
-
 		this.scene = this.setScene();
 		this.camera = this.setCamera();
 		this.renderer = this.setRenderer();
-		this.controls = this.setControl();
+		this.controls = this.setControls();
 		this.gui = new dat.GUI({ autoPlace: false });
 
 		this.loadProps();
 	}
+
 	/**
 	 * @param {HTMLElement} parent
 	 */
@@ -43,7 +43,7 @@ export default class GLRenderTemplate {
 	}
 	setUI() {
 		this.stats = new Stats();
-		this.stats.showPanel( 0 ); // 0: fps, 1: ms, 2: mb, 3+: custom
+		this.stats.showPanel( 1 ); // 0: fps, 1: ms, 2: mb, 3+: custom
 		this.stats.dom.style.position = 'absolute'
 		this.parent.appendChild(this.stats.dom);
 
@@ -55,13 +55,12 @@ export default class GLRenderTemplate {
 
 		return camera;
 	}
-	setControl() {
+	setControls() {
 		let controls = new THREE.OrbitControls( this.camera, this.renderer.domElement );
 		controls.enableDamping = true;
 		controls.dampingFactor = 1;
-		// controls.enableZoom = false;
 
-		return controls;
+		return [ controls ];
 	}
 	setScene() {
 		let scene = new THREE.Scene();
@@ -78,7 +77,6 @@ export default class GLRenderTemplate {
 		renderer.shadowMap.enabled = true;
 		return renderer;
 	}
-	
 	windowResize() {
 		this.resizeAspect();
 		this.resizeRenderer();
@@ -93,16 +91,17 @@ export default class GLRenderTemplate {
 		this.width = bbox.width;
 		this.height = window.innerHeight;
 	}
-
 	render() {
 		this.stats.begin();
 
-		this.controls.update();
+		this.controls.forEach( c => c.update() );
+
+
+
 		this.renderer.render( this.scene, this.camera );
 
 		this.stats.end();
 	}
-
 	animate(){
 		//use .call or .apply will get max call stack error
 		let animate = this.animate.bind(this);

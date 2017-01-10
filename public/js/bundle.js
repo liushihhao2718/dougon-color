@@ -89,7 +89,7 @@
  * @prop {THREE.Camera} camera
  * @prop {THREE.Scene} scene
  * @prop {THREE.WebGLRenderer} renderer
- * @prop {THREE.Controls} controls
+ * @prop { Array.<THREE.Controls> } controls
  * @prop {number} width
  * @prop {number} height
  * @prop {domElement} parent
@@ -100,15 +100,15 @@
  */
 class GLRenderTemplate {
 	constructor() {
-
 		this.scene = this.setScene();
 		this.camera = this.setCamera();
 		this.renderer = this.setRenderer();
-		this.controls = this.setControl();
+		this.controls = this.setControls();
 		this.gui = new __WEBPACK_IMPORTED_MODULE_2_lib_dat_gui_min__["GUI"]({ autoPlace: false });
 
 		this.loadProps();
 	}
+
 	/**
 	 * @param {HTMLElement} parent
 	 */
@@ -124,7 +124,7 @@ class GLRenderTemplate {
 	}
 	setUI() {
 		this.stats = new __WEBPACK_IMPORTED_MODULE_3_lib_stats_min_js___default.a();
-		this.stats.showPanel( 0 ); // 0: fps, 1: ms, 2: mb, 3+: custom
+		this.stats.showPanel( 1 ); // 0: fps, 1: ms, 2: mb, 3+: custom
 		this.stats.dom.style.position = 'absolute'
 		this.parent.appendChild(this.stats.dom);
 
@@ -136,13 +136,12 @@ class GLRenderTemplate {
 
 		return camera;
 	}
-	setControl() {
+	setControls() {
 		let controls = new THREE.OrbitControls( this.camera, this.renderer.domElement );
 		controls.enableDamping = true;
 		controls.dampingFactor = 1;
-		// controls.enableZoom = false;
 
-		return controls;
+		return [ controls ];
 	}
 	setScene() {
 		let scene = new THREE.Scene();
@@ -159,7 +158,6 @@ class GLRenderTemplate {
 		renderer.shadowMap.enabled = true;
 		return renderer;
 	}
-	
 	windowResize() {
 		this.resizeAspect();
 		this.resizeRenderer();
@@ -174,16 +172,17 @@ class GLRenderTemplate {
 		this.width = bbox.width;
 		this.height = window.innerHeight;
 	}
-
 	render() {
 		this.stats.begin();
 
-		this.controls.update();
+		this.controls.forEach( c => c.update() );
+
+
+
 		this.renderer.render( this.scene, this.camera );
 
 		this.stats.end();
 	}
-
 	animate(){
 		//use .call or .apply will get max call stack error
 		let animate = this.animate.bind(this);
@@ -201,9 +200,11 @@ class GLRenderTemplate {
 
 "use strict";
 /* harmony import */ var __WEBPACK_IMPORTED_MODULE_0__GLRenderTemplate__ = __webpack_require__(0);
-/* harmony import */ var __WEBPACK_IMPORTED_MODULE_1_Model_Unfolder__ = __webpack_require__(3);
-/* harmony import */ var __WEBPACK_IMPORTED_MODULE_2_Model_setEntity__ = __webpack_require__(13);
-/* harmony import */ var __WEBPACK_IMPORTED_MODULE_3_Model_normalLine__ = __webpack_require__(12);
+/* harmony import */ var __WEBPACK_IMPORTED_MODULE_1_Control_SelectControl__ = __webpack_require__(14);
+/* harmony import */ var __WEBPACK_IMPORTED_MODULE_2_Model_Unfolder__ = __webpack_require__(3);
+/* harmony import */ var __WEBPACK_IMPORTED_MODULE_3_Model_setEntity__ = __webpack_require__(13);
+/* harmony import */ var __WEBPACK_IMPORTED_MODULE_4_Model_normalLine__ = __webpack_require__(12);
+
 
 
 
@@ -213,6 +214,7 @@ class ObjectView extends __WEBPACK_IMPORTED_MODULE_0__GLRenderTemplate__["a" /* 
 	constructor() {
 		super();
 		this.selectableObjects = [];
+		this.selectControl = this.setSelectControl();
 	}
 	// inhirtance method 
 	setCamera() {
@@ -223,7 +225,7 @@ class ObjectView extends __WEBPACK_IMPORTED_MODULE_0__GLRenderTemplate__["a" /* 
 	}
 	loadProps() {
 		window.scene = this.scene;
-		__webpack_require__.i(__WEBPACK_IMPORTED_MODULE_2_Model_setEntity__["a" /* default */])(this.scene).onObjectFileLoaded( geometry =>{
+		__webpack_require__.i(__WEBPACK_IMPORTED_MODULE_3_Model_setEntity__["a" /* default */])(this.scene).onObjectFileLoaded( geometry =>{
 			this.handleLoadObject(geometry);
 		});
 	}
@@ -234,7 +236,7 @@ class ObjectView extends __WEBPACK_IMPORTED_MODULE_0__GLRenderTemplate__["a" /* 
 				this.unfold( object );
 			}
 		}
-		const lines = __webpack_require__.i(__WEBPACK_IMPORTED_MODULE_3_Model_normalLine__["a" /* default */])(this.scene, object.geometry);
+		const lines = __webpack_require__.i(__WEBPACK_IMPORTED_MODULE_4_Model_normalLine__["a" /* default */])(this.scene, object.geometry);
 		lines.applyMatrix( object.matrix );
 		lines.visible = cube['show normal'];
 		this.scene.add(lines);
@@ -258,9 +260,15 @@ class ObjectView extends __WEBPACK_IMPORTED_MODULE_0__GLRenderTemplate__["a" /* 
 		});
 	}
 
-	// not inhirtance method 
+	// not inhirtance method
+	setSelectControl() {
+		let control = new __WEBPACK_IMPORTED_MODULE_1_Control_SelectControl__["a" /* default */](this);
+		this.controls.push( control );
+		return control;
+	}
 	unfold(object){
-		let unfoldFaces = __WEBPACK_IMPORTED_MODULE_1_Model_Unfolder__["a" /* default */].unfold(object.geometry);
+		object.geometry.computeFaceNormals();
+		let unfoldFaces = __WEBPACK_IMPORTED_MODULE_2_Model_Unfolder__["a" /* default */].unfold(object.geometry);
 		/**@todo send to unfold view */
 		let group = new THREE.Group();
 		group.name = 'unfold';
@@ -268,6 +276,8 @@ class ObjectView extends __WEBPACK_IMPORTED_MODULE_0__GLRenderTemplate__["a" /* 
 		unfoldFaces.forEach(m => {
 			m.applyMatrix( object.matrix );
 			group.add(m);
+			this.selectableObjects.push( m );
+
 		});
 		this.scene.add( group );
 	}
@@ -443,7 +453,8 @@ function dfs(_array, adj){
 }
 
 function samePlane(face_a, face_b) {
-	return normalEqual(face_a, face_b) && connected( face_a, face_b );
+	return false;
+	// return normalEqual(face_a, face_b) && connected( face_a, face_b );
 	// return normalEqual(face_a, face_b) && vertical( face_a.normal, face_a, face_b );
 }
 
@@ -459,8 +470,9 @@ function vertical(n, face_a, face_b){
  * @param {THREE.Face3} face_aface_b
  */
 function normalEqual( face_a, face_b ) {
-	let n_a = face_a.normal.normalize();
-	let n_b = face_b.normal.normalize()
+	
+	let n_a = computeFaceNormals(face_a);
+	let n_b = computeFaceNormals(face_b);
 	
 	return vector_equal(n_a, n_b, Math.PI * 0.1 / 180);
 }
@@ -527,6 +539,24 @@ function makeMesh(groupedFaces){
 	return mesh;
 }
 /* harmony default export */ exports["a"] = {unfold};
+
+function computeFaceNormals(face) {
+
+	var cb = new THREE.Vector3(), ab = new THREE.Vector3();
+
+
+		var vA = scope.geometry.vertices[ face.a ];
+		var vB = scope.geometry.vertices[ face.b ];
+		var vC = scope.geometry.vertices[ face.c ];
+
+		cb.subVectors( vC, vB );
+		ab.subVectors( vA, vB );
+		cb.cross( ab );
+
+		cb.normalize();
+
+		return cb;
+}
 
 /***/ },
 /* 4 */,
@@ -1588,7 +1618,7 @@ THREE.ColladaLoader.prototype = {
 
 		var scope = this;
 
-		var loader = new THREE.XHRLoader( scope.manager );
+		var loader = new THREE.FileLoader( scope.manager );
 		loader.load( url, function ( text ) {
 
 			onLoad( scope.parse( text, getBaseUrl( url ) ) );
@@ -2799,7 +2829,7 @@ THREE.ColladaLoader.prototype = {
 
 			}
 
-			return new THREE.Float32Attribute( array, sourceStride );
+			return new THREE.Float32BufferAttribute( array, sourceStride );
 
 		}
 
@@ -4075,6 +4105,45 @@ function loadDAE(){
 function onObjectFileLoaded(callback) {
 	_callback = callback;
 }
+
+/***/ },
+/* 14 */
+/***/ function(module, exports, __webpack_require__) {
+
+"use strict";
+class SelectControl{
+	constructor(controller){
+		this.controller = controller;
+		this.objects = controller.selectableObjects;
+		this.raycaster = new THREE.Raycaster();
+
+		controller.renderer.domElement.addEventListener( 'mousedown', this.onMouseDown.bind(this) );
+	}
+	update(){
+
+	}
+	onMouseDown(event){
+		event.preventDefault();
+		const ctrl = this.controller;
+		const top = ctrl.renderer.domElement.getBoundingClientRect().top;
+		const left = ctrl.renderer.domElement.getBoundingClientRect().left;
+
+		const mouseX = ( (event.clientX-left) / ctrl.width) * 2 - 1;
+		const mouseY = -( (event.clientY-top) / ctrl.height) * 2 + 1;
+		var mouse = new THREE.Vector2( mouseX, mouseY );
+
+		this.raycaster.setFromCamera( mouse, ctrl.camera );
+		var intersects = this.raycaster.intersectObjects( this.objects );
+
+		if(intersects.length){
+			console.log(intersects[0]);
+		}
+		
+
+	}
+}
+/* harmony export (immutable) */ exports["a"] = SelectControl;
+
 
 /***/ }
 /******/ ]);

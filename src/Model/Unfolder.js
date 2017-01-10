@@ -82,7 +82,8 @@ function dfs(_array, adj){
 }
 
 function samePlane(face_a, face_b) {
-	return normalEqual(face_a, face_b) && connected( face_a, face_b );
+	return false;
+	// return normalEqual(face_a, face_b) && connected( face_a, face_b );
 	// return normalEqual(face_a, face_b) && vertical( face_a.normal, face_a, face_b );
 }
 
@@ -98,8 +99,9 @@ function vertical(n, face_a, face_b){
  * @param {THREE.Face3} face_aface_b
  */
 function normalEqual( face_a, face_b ) {
-	let n_a = face_a.normal.normalize();
-	let n_b = face_b.normal.normalize()
+	
+	let n_a = computeFaceNormals(face_a);
+	let n_b = computeFaceNormals(face_b);
 	
 	return vector_equal(n_a, n_b, Math.PI * 0.1 / 180);
 }
@@ -166,3 +168,21 @@ function makeMesh(groupedFaces){
 	return mesh;
 }
 export default {unfold};
+
+function computeFaceNormals(face) {
+
+	var cb = new THREE.Vector3(), ab = new THREE.Vector3();
+
+
+		var vA = scope.geometry.vertices[ face.a ];
+		var vB = scope.geometry.vertices[ face.b ];
+		var vC = scope.geometry.vertices[ face.c ];
+
+		cb.subVectors( vC, vB );
+		ab.subVectors( vA, vB );
+		cb.cross( ab );
+
+		cb.normalize();
+
+		return cb;
+}
