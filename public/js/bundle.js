@@ -403,7 +403,7 @@ function makeAdjacencyList(_array, cb){
 	 * 4 -> 5
 	 * output
 	 * {
-	 * 	1 : [2],
+	 * 	1 : {[2], visited: false},
 	 * 	2 : [3],
 	 * 	3 : [],
 	 *  4 : [5],
@@ -413,12 +413,12 @@ function makeAdjacencyList(_array, cb){
 	 */
 	let i, j;
 	for(i=0 ; i < _array.length ; i++) {
-		map.set(i, []);
+		map.set(i, {neighbor:[], visited: false});
 
-		for(j= i+1 ; j < _array.length ; j++) {
-
-			if( cb(_array[i], _array[j]) ) {
-				map.get(i).push(j);
+		for(j= 0 ; j < _array.length ; j++) {
+			if(i==j) continue;
+			else if( cb(_array[i], _array[j]) ) {
+				map.get(i).neighbor.push(j);
 			}
 		}
 	}
@@ -426,35 +426,38 @@ function makeAdjacencyList(_array, cb){
 }
 
 function dfs(_array, adj){
-	let groupedFaces = [];
+	let groupedFaces = new Set();
 	
 	/**
 	result
 	[  [1, 2, 3], [4, 5], [...], ...  ]
 	 */
 	for(let key of adj.keys() ){
+		if( adj.get(key).visited ) continue;
 		let subgroup = findConnect( key );
-		groupedFaces.push(subgroup.map( i => _array[i]) );
+		groupedFaces.add( subgroup.map( i => _array[i]) );
 	}
-	
+	for(let g of groupedFaces) {
+		if( g.length === 0 ) groupedFaces.delete( g );
+	}
 	function findConnect(key){
-		let subgroup = [key];
 		
-		if( !adj.has(key)) return [];
+		if( adj.get(key).visited ) return [];
+		adj.get(key).visited = true;
 
-		for(let i of adj.get(key)) {
+		let subgroup = [key];
+
+		for(let i of adj.get(key).neighbor) {
 			subgroup = subgroup.concat( findConnect(i) );
 		}
-		adj.delete(key);
-		
 		return subgroup;
 	}
-	return groupedFaces;
+	return Array.from(groupedFaces.values() );
 }
 
 function samePlane(face_a, face_b) {
-	return false;
-	// return normalEqual(face_a, face_b) && connected( face_a, face_b );
+	// return false;
+	return normalEqual(face_a, face_b) && connected( face_a, face_b );
 	// return normalEqual(face_a, face_b) && vertical( face_a.normal, face_a, face_b );
 }
 
