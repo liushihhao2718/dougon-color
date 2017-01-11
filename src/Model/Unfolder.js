@@ -14,7 +14,7 @@ function unfold(geometry) {
 	return meshies;
 }
 /**
- * @param {(function(THREE.Face3,THREE.Face3))} cb
+ * @param { function(THREE.Face3,THREE.Face3) } cb
  */
 function groupBy(_array, cb){
 	let adj = makeAdjacencyList(_array, cb);
@@ -89,18 +89,6 @@ function samePlane(face_a, face_b) {
 	return normalEqual(face_a, face_b) && connected( face_a, face_b );
 	// return normalEqual(face_a, face_b) && vertical( face_a.normal, face_a, face_b );
 }
-
-function vertical(n, face_a, face_b){
-	let p_a = scope.geometry.vertices[face_a.a];
-	let p_b = scope.geometry.vertices[face_b.a];
-	let v = p_a.clone().sub(p_b);
-
-	return n.dot( v ) < 0.001;
-}
-/**
- * @param {THREE.Face3} face_a
- * @param {THREE.Face3} face_aface_b
- */
 function normalEqual( face_a, face_b ) {
 	
 	let n_a = computeFaceNormals(face_a);
@@ -109,10 +97,6 @@ function normalEqual( face_a, face_b ) {
 	return vector_equal(n_a, n_b, Math.PI * 0.1 / 180);
 }
 
-/**
- * @param {THREE.Face3} face_a
- * @param {THREE.Face3} face_aface_b
- */
 function connected( face_a, face_b ) {
 	// connected triangles have 2 same point.
 	let a = [ face_a.a, face_a.b, face_a.c ];
@@ -141,19 +125,14 @@ function vector_equal(vertex_1,vertex_2, deviation = 0.1){
 function close(a,b, deviation){
 	return Math.abs(a - b) < deviation;
 }
-/**
- * @returns {THREE.MeshBasicMaterial}
- */
 function randomMaterial(){
 	return new THREE.MeshBasicMaterial({
 		color: Math.random() * 0xffffff, 
 		side: THREE.FrontSide
 	});
 }
-
 /**
  * @param {THREE.Face3[]} groupedFaces
- * @return {THREE.Mesh}
  */
 function makeMesh(groupedFaces){
 	let geometry = scope.geometry;
@@ -164,28 +143,23 @@ function makeMesh(groupedFaces){
 		.map(v => geometry.vertices[v]);
 	unfold_face_geo.faces = groupedFaces.map((_,i)=>i*3).map(i=>new THREE.Face3(i, i+1, i+2));
 
-	let n = groupedFaces[0].normal.normalize().multiplyScalar(0.1);
-	unfold_face_geo.translate(n.x, n.y, n.z);
 	let mesh = new THREE.Mesh( unfold_face_geo, randomMaterial() );
-
 	return mesh;
 }
 export default {unfold};
 
 function computeFaceNormals(face) {
+	let cb = new THREE.Vector3()
+	let ab = new THREE.Vector3();
+	const vA = scope.geometry.vertices[ face.a ];
+	const vB = scope.geometry.vertices[ face.b ];
+	const vC = scope.geometry.vertices[ face.c ];
 
-	var cb = new THREE.Vector3(), ab = new THREE.Vector3();
+	cb.subVectors( vC, vB );
+	ab.subVectors( vA, vB );
+	cb.cross( ab );
 
+	cb.normalize();
 
-		var vA = scope.geometry.vertices[ face.a ];
-		var vB = scope.geometry.vertices[ face.b ];
-		var vC = scope.geometry.vertices[ face.c ];
-
-		cb.subVectors( vC, vB );
-		ab.subVectors( vA, vB );
-		cb.cross( ab );
-
-		cb.normalize();
-
-		return cb;
+	return cb;
 }

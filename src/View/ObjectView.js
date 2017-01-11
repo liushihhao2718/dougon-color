@@ -9,6 +9,7 @@ export default class ObjectView extends GLRenderTemplate {
 		super();
 		this.selectableObjects = [];
 		this.selectControl = this.setSelectControl();
+		this.model = undefined;
 	}
 	// inhirtance method 
 	setCamera() {
