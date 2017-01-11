@@ -1,14 +1,17 @@
+import {computeFaceNormals, vector_equal} from 'lib/util';
 /**
  * @param {THREE.Geometry} geometry
  */
 let scope = this;
 /**
- * mesh uuid : [ old_index ]
+ * map< id, [ old_index ] >
  */
 let meshSourceMap = new Map();
 /**
  * @return {Array<THREE.Mesh>}
  */
+
+
 function unfold(geometry) {
 	scope.geometry = geometry;
 	let faces = geometry.faces;
@@ -17,6 +20,7 @@ function unfold(geometry) {
 	let meshies = groupedFaces.map(g => makeMesh(g) );
 	return {meshies, meshSourceMap};
 }
+export default {unfold};
 /**
  * @param { function(THREE.Face3,THREE.Face3) } cb
  */
@@ -95,8 +99,8 @@ function samePlane(face_a, face_b) {
 }
 function normalEqual( face_a, face_b ) {
 	
-	let n_a = computeFaceNormals(face_a);
-	let n_b = computeFaceNormals(face_b);
+	let n_a = computeFaceNormals(face_a, scope.geometry.vertices);
+	let n_b = computeFaceNormals(face_b, scope.geometry.vertices);
 	
 	return vector_equal(n_a, n_b, Math.PI * 0.1 / 180);
 }
@@ -115,20 +119,6 @@ function connected( face_a, face_b ) {
 	return (count > 1);
 }
 
-function vector_equal(vertex_1,vertex_2, deviation = 0.1){
-	
-	return (
-		close(vertex_1.x, vertex_2.x, deviation)
-		&&close(vertex_1.y, vertex_2.y, deviation)
-		&&close(vertex_1.z, vertex_2.z, deviation)
-	);
-}
-/**
- * @param {number} a,b
- */
-function close(a,b, deviation){
-	return Math.abs(a - b) < deviation;
-}
 function randomMaterial(){
 	return new THREE.MeshBasicMaterial({
 		color: Math.random() * 0xffffff, 
@@ -151,21 +141,4 @@ function makeMesh(groupedFaces){
 
 	meshSourceMap.set( mesh.id, sourceMap );
 	return mesh;
-}
-export default {unfold};
-
-function computeFaceNormals(face) {
-	let cb = new THREE.Vector3()
-	let ab = new THREE.Vector3();
-	const vA = scope.geometry.vertices[ face.a ];
-	const vB = scope.geometry.vertices[ face.b ];
-	const vC = scope.geometry.vertices[ face.c ];
-
-	cb.subVectors( vC, vB );
-	ab.subVectors( vA, vB );
-	cb.cross( ab );
-
-	cb.normalize();
-
-	return cb;
 }

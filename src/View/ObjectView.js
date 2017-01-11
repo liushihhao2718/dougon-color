@@ -86,7 +86,7 @@ export default class ObjectView extends GLRenderTemplate {
 		console.log(meshSourceMap);
 	}
 	send(){
-
+		if(this.selectControl.selected.length === 0) return;
 		let group = new THREE.Group();
 
 		this.selectControl.selected.forEach(s =>{

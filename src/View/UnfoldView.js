@@ -1,5 +1,6 @@
 import GLRenderTemplate from './GLRenderTemplate';
 import {notification} from 'lib/Notification';
+import {computeFaceNormals} from 'lib/util';
 
 export default class UnFoldView extends GLRenderTemplate {
 	constructor(){
@@ -49,7 +50,6 @@ export default class UnFoldView extends GLRenderTemplate {
 		});
 	}
 	receive( event ) {
-		console.log(event);
 		let group = event.message;
 		moveToSamePlane(group);
 
@@ -76,5 +76,12 @@ function groundGird() {
 }
 function moveToSamePlane(group){
 	let stantard = group.children[0];
-	
+	let normal = computeFaceNormals(stantard.geometry.faces[0], stantard.geometry.vertices);
+	const axisZ = new THREE.Vector3(0, 0, 1);
+	let pivot = normal.clone().cross( axisZ ).normalize();
+
+	let rotate = new THREE.Matrix4();
+	rotate.makeRotationAxis (pivot, normal.angleTo(axisZ) );
+	// rotate.getInverse(stantard.matrix)
+	group.applyMatrix( rotate );
 }
