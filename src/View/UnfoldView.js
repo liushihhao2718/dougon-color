@@ -1,6 +1,11 @@
 import GLRenderTemplate from './GLRenderTemplate';
+import {notification} from 'lib/Notification';
 
 export default class UnFoldView extends GLRenderTemplate {
+	constructor(){
+		super();
+		notification.addEventListener('send', this.receive.bind(this) );
+	}
 	setCamera() {
 		let camera = new THREE.OrthographicCamera( -10, 10,	10,	-10, 0.1, 10 );
 
@@ -10,7 +15,6 @@ export default class UnFoldView extends GLRenderTemplate {
 		this.scene.add(camera);
 		return camera;
 	}
-
 	loadProps() {		
 		this.scene.add( groundPlane() );
 		this.scene.add( groundGird() );
@@ -33,7 +37,7 @@ export default class UnFoldView extends GLRenderTemplate {
 
 		return controls;
 	}
-		setUI(){
+	setUI(){
 		super.setUI();
 
 		let style = this.gui.domElement.style;
@@ -44,8 +48,14 @@ export default class UnFoldView extends GLRenderTemplate {
 			right: '50%'
 		});
 	}
-}
+	receive( event ) {
+		console.log(event);
+		let group = event.message;
+		moveToSamePlane(group);
 
+		this.scene.add(group);
+	}
+}
 function groundPlane(){
 	var planeGeometry = new THREE.PlaneGeometry(10, 10, 1, 1);
 	var planeMaterial = new THREE.MeshBasicMaterial({color: 0xccffff});
@@ -56,7 +66,6 @@ function groundPlane(){
 	plane.position.set(0,0,0);
 	return plane;
 }
-
 function groundGird() {
 	var size = 10;
 	var divisions = 20;
@@ -64,4 +73,8 @@ function groundGird() {
 	var gridHelper = new THREE.GridHelper( size, divisions );
 	gridHelper.rotateX(90 * Math.PI / 180);
 	return gridHelper;
+}
+function moveToSamePlane(group){
+	let stantard = group.children[0];
+	
 }

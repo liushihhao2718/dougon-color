@@ -204,6 +204,8 @@ class GLRenderTemplate {
 /* harmony import */ var __WEBPACK_IMPORTED_MODULE_2_Model_Unfolder__ = __webpack_require__(3);
 /* harmony import */ var __WEBPACK_IMPORTED_MODULE_3_Model_setEntity__ = __webpack_require__(13);
 /* harmony import */ var __WEBPACK_IMPORTED_MODULE_4_Model_normalLine__ = __webpack_require__(12);
+/* harmony import */ var __WEBPACK_IMPORTED_MODULE_5_lib_Notification__ = __webpack_require__(15);
+
 
 
 
@@ -233,7 +235,7 @@ class ObjectView extends __WEBPACK_IMPORTED_MODULE_0__GLRenderTemplate__["a" /* 
 	handleLoadObject(object){
 		let cube = {
 			'show normal': false,
-			'unfold':()=>{
+			unfold:()=>{
 				this.unfold( object );
 			}
 		}
@@ -259,6 +261,13 @@ class ObjectView extends __WEBPACK_IMPORTED_MODULE_0__GLRenderTemplate__["a" /* 
 			top: '0px',
 			right: '0px'
 		});
+
+		let send = {
+			send: () =>	this.send()
+		};
+
+		this.gui.add(send, 'send');
+
 	}
 
 	// not inhirtance method
@@ -269,20 +278,40 @@ class ObjectView extends __WEBPACK_IMPORTED_MODULE_0__GLRenderTemplate__["a" /* 
 	}
 	unfold(object){
 		object.geometry.computeFaceNormals();
-		let unfoldFaces = __WEBPACK_IMPORTED_MODULE_2_Model_Unfolder__["a" /* default */].unfold(object.geometry);
+		let {meshies, meshSourceMap} = __WEBPACK_IMPORTED_MODULE_2_Model_Unfolder__["a" /* default */].unfold(object.geometry);
 		/**@todo send to unfold view */
 		let group = new THREE.Group();
 		group.name = 'unfold';
 
-		unfoldFaces.forEach(m => {
+		meshies.forEach(m => {
 			m.applyMatrix( object.matrix );
 			group.add(m);
 			this.selectableObjects.push( m );
 
 		});
 		this.scene.add( group );
+		console.log(meshSourceMap);
+	}
+	send(){
+
+		let group = new THREE.Group();
+
+		this.selectControl.selected.forEach(s =>{
+			group.add( s.object );
+			this.removeFromSelectable( s );
+		});
+		this.selectControl.clearSelected();
+
+		__WEBPACK_IMPORTED_MODULE_5_lib_Notification__["a" /* notification */].dispatchEvent( {
+			type : 'send',
+			message: group
+		} );
 	}
 
+	removeFromSelectable(s){
+		const i = this.selectableObjects.indexOf(s.object);
+		this.selectableObjects.splice(i, 1);
+	}
 }
 /* harmony export (immutable) */ exports["a"] = ObjectView;
 
@@ -295,9 +324,15 @@ class ObjectView extends __WEBPACK_IMPORTED_MODULE_0__GLRenderTemplate__["a" /* 
 
 "use strict";
 /* harmony import */ var __WEBPACK_IMPORTED_MODULE_0__GLRenderTemplate__ = __webpack_require__(0);
+/* harmony import */ var __WEBPACK_IMPORTED_MODULE_1_lib_Notification__ = __webpack_require__(15);
+
 
 
 class UnFoldView extends __WEBPACK_IMPORTED_MODULE_0__GLRenderTemplate__["a" /* default */] {
+	constructor(){
+		super();
+		__WEBPACK_IMPORTED_MODULE_1_lib_Notification__["a" /* notification */].addEventListener('send', this.receive.bind(this) );
+	}
 	setCamera() {
 		let camera = new THREE.OrthographicCamera( -10, 10,	10,	-10, 0.1, 10 );
 
@@ -307,7 +342,6 @@ class UnFoldView extends __WEBPACK_IMPORTED_MODULE_0__GLRenderTemplate__["a" /* 
 		this.scene.add(camera);
 		return camera;
 	}
-
 	loadProps() {		
 		this.scene.add( groundPlane() );
 		this.scene.add( groundGird() );
@@ -330,7 +364,7 @@ class UnFoldView extends __WEBPACK_IMPORTED_MODULE_0__GLRenderTemplate__["a" /* 
 
 		return controls;
 	}
-		setUI(){
+	setUI(){
 		super.setUI();
 
 		let style = this.gui.domElement.style;
@@ -341,9 +375,15 @@ class UnFoldView extends __WEBPACK_IMPORTED_MODULE_0__GLRenderTemplate__["a" /* 
 			right: '50%'
 		});
 	}
+	receive( event ) {
+		console.log(event);
+		let group = event.message;
+		moveToSamePlane(group);
+
+		this.scene.add(group);
+	}
 }
 /* harmony export (immutable) */ exports["a"] = UnFoldView;
-
 
 function groundPlane(){
 	var planeGeometry = new THREE.PlaneGeometry(10, 10, 1, 1);
@@ -355,7 +395,6 @@ function groundPlane(){
 	plane.position.set(0,0,0);
 	return plane;
 }
-
 function groundGird() {
 	var size = 10;
 	var divisions = 20;
@@ -363,6 +402,10 @@ function groundGird() {
 	var gridHelper = new THREE.GridHelper( size, divisions );
 	gridHelper.rotateX(90 * Math.PI / 180);
 	return gridHelper;
+}
+function moveToSamePlane(group){
+	let stantard = group.children[0];
+	
 }
 
 /***/ },
@@ -375,6 +418,10 @@ function groundGird() {
  */
 let scope = this;
 /**
+ * mesh uuid : [ old_index ]
+ */
+let meshSourceMap = new Map();
+/**
  * @return {Array<THREE.Mesh>}
  */
 function unfold(geometry) {
@@ -383,7 +430,7 @@ function unfold(geometry) {
 	// [ [f,f...] , [f,f...] ]
 	let groupedFaces = groupBy(faces, (a, b)=> samePlane(a, b) );
 	let meshies = groupedFaces.map(g => makeMesh(g) );
-	return meshies;
+	return {meshies, meshSourceMap};
 }
 /**
  * @param { function(THREE.Face3,THREE.Face3) } cb
@@ -510,12 +557,14 @@ function makeMesh(groupedFaces){
 	let geometry = scope.geometry;
 	let unfold_face_geo = new THREE.Geometry();
 
-	unfold_face_geo.vertices = groupedFaces.map(f=>[ f.a,f.b,f.c ])
-		.reduce((a,b) => a.concat(b) )
-		.map(v => geometry.vertices[v]);
+	let sourceMap = groupedFaces.map(f=>[ f.a,f.b,f.c ]).reduce((a,b) => a.concat(b) );
+
+	unfold_face_geo.vertices = sourceMap.map(v => geometry.vertices[v]);
 	unfold_face_geo.faces = groupedFaces.map((_,i)=>i*3).map(i=>new THREE.Face3(i, i+1, i+2));
 
 	let mesh = new THREE.Mesh( unfold_face_geo, randomMaterial() );
+
+	meshSourceMap.set( mesh.id, sourceMap );
 	return mesh;
 }
 /* harmony default export */ exports["a"] = {unfold};
@@ -4138,11 +4187,21 @@ class SelectControl{
 /* harmony export (immutable) */ exports["a"] = SelectControl;
 
 function mixColor(color1, color2){
-	let proportion = 0.9;
+	let proportion = 0.8;
 	let a = color1.clone().multiplyScalar( proportion );
 	let b = color2.clone().multiplyScalar( 1 - proportion );
 	return a.add( b );
 }
+
+/***/ },
+/* 15 */
+/***/ function(module, exports, __webpack_require__) {
+
+"use strict";
+/* harmony export (binding) */ __webpack_require__.d(exports, "a", function() { return notification; });
+class Notification extends THREE.EventDispatcher{}
+
+let notification = new Notification();
 
 /***/ }
 /******/ ]);

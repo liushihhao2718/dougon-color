@@ -45,7 +45,7 @@ export default class SelectControl{
 	
 }
 function mixColor(color1, color2){
-	let proportion = 0.9;
+	let proportion = 0.8;
 	let a = color1.clone().multiplyScalar( proportion );
 	let b = color2.clone().multiplyScalar( 1 - proportion );
 	return a.add( b );

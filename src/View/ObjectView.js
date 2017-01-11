@@ -3,6 +3,7 @@ import SelectControl from 'Control/SelectControl';
 import Unfolder from 'Model/Unfolder';
 import loadPredefined from 'Model/setEntity';
 import nomalLine from 'Model/normalLine';
+import {notification} from 'lib/Notification';
 
 export default class ObjectView extends GLRenderTemplate {
 	constructor() {
@@ -27,7 +28,7 @@ export default class ObjectView extends GLRenderTemplate {
 	handleLoadObject(object){
 		let cube = {
 			'show normal': false,
-			'unfold':()=>{
+			unfold:()=>{
 				this.unfold( object );
 			}
 		}
@@ -53,6 +54,13 @@ export default class ObjectView extends GLRenderTemplate {
 			top: '0px',
 			right: '0px'
 		});
+
+		let send = {
+			send: () =>	this.send()
+		};
+
+		this.gui.add(send, 'send');
+
 	}
 
 	// not inhirtance method
@@ -63,19 +71,39 @@ export default class ObjectView extends GLRenderTemplate {
 	}
 	unfold(object){
 		object.geometry.computeFaceNormals();
-		let unfoldFaces = Unfolder.unfold(object.geometry);
+		let {meshies, meshSourceMap} = Unfolder.unfold(object.geometry);
 		/**@todo send to unfold view */
 		let group = new THREE.Group();
 		group.name = 'unfold';
 
-		unfoldFaces.forEach(m => {
+		meshies.forEach(m => {
 			m.applyMatrix( object.matrix );
 			group.add(m);
 			this.selectableObjects.push( m );
 
 		});
 		this.scene.add( group );
+		console.log(meshSourceMap);
+	}
+	send(){
+
+		let group = new THREE.Group();
+
+		this.selectControl.selected.forEach(s =>{
+			group.add( s.object );
+			this.removeFromSelectable( s );
+		});
+		this.selectControl.clearSelected();
+
+		notification.dispatchEvent( {
+			type : 'send',
+			message: group
+		} );
 	}
 
+	removeFromSelectable(s){
+		const i = this.selectableObjects.indexOf(s.object);
+		this.selectableObjects.splice(i, 1);
+	}
 }
 

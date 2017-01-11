@@ -3,6 +3,10 @@
  */
 let scope = this;
 /**
+ * mesh uuid : [ old_index ]
+ */
+let meshSourceMap = new Map();
+/**
  * @return {Array<THREE.Mesh>}
  */
 function unfold(geometry) {
@@ -11,7 +15,7 @@ function unfold(geometry) {
 	// [ [f,f...] , [f,f...] ]
 	let groupedFaces = groupBy(faces, (a, b)=> samePlane(a, b) );
 	let meshies = groupedFaces.map(g => makeMesh(g) );
-	return meshies;
+	return {meshies, meshSourceMap};
 }
 /**
  * @param { function(THREE.Face3,THREE.Face3) } cb
@@ -138,12 +142,14 @@ function makeMesh(groupedFaces){
 	let geometry = scope.geometry;
 	let unfold_face_geo = new THREE.Geometry();
 
-	unfold_face_geo.vertices = groupedFaces.map(f=>[ f.a,f.b,f.c ])
-		.reduce((a,b) => a.concat(b) )
-		.map(v => geometry.vertices[v]);
+	let sourceMap = groupedFaces.map(f=>[ f.a,f.b,f.c ]).reduce((a,b) => a.concat(b) );
+
+	unfold_face_geo.vertices = sourceMap.map(v => geometry.vertices[v]);
 	unfold_face_geo.faces = groupedFaces.map((_,i)=>i*3).map(i=>new THREE.Face3(i, i+1, i+2));
 
 	let mesh = new THREE.Mesh( unfold_face_geo, randomMaterial() );
+
+	meshSourceMap.set( mesh.id, sourceMap );
 	return mesh;
 }
 export default {unfold};
