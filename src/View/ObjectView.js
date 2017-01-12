@@ -34,6 +34,7 @@ export default class ObjectView extends GLRenderTemplate {
 		}
 		const lines = nomalLine(this.scene, object.geometry);
 		lines.applyMatrix( object.matrix );
+
 		lines.visible = cube['show normal'];
 		this.scene.add(lines);
 		

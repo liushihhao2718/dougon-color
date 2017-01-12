@@ -24,8 +24,8 @@ export default class GLRenderTemplate {
 		this.renderer = this.setRenderer();
 		this.controls = this.setControls();
 		this.gui = new dat.GUI({ autoPlace: false });
-var axisHelper = new THREE.AxisHelper( 100 );
-		this.scene.add( axisHelper );
+// var axisHelper = new THREE.AxisHelper( 100 );
+		// this.scene.add( axisHelper );
 		this.loadProps();
 	}
 

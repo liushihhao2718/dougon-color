@@ -8,7 +8,7 @@ export default class UnFoldView extends GLRenderTemplate {
 		notification.addEventListener('send', this.receive.bind(this) );
 	}
 	setCamera() {
-		let camera = new THREE.OrthographicCamera( -10, 10,	10,	-10, 0.1, 10 );
+		let camera = new THREE.OrthographicCamera( -100, 100,	100,	-100, -100, 100 );
 
 		camera.position.z = 5;
 	
@@ -17,7 +17,7 @@ export default class UnFoldView extends GLRenderTemplate {
 		return camera;
 	}
 	loadProps() {		
-		this.scene.add( groundPlane() );
+		// this.scene.add( groundPlane() );
 		this.scene.add( groundGird() );
 	}
 	resizeRenderer() {
@@ -30,13 +30,13 @@ export default class UnFoldView extends GLRenderTemplate {
 		this.camera.updateProjectionMatrix();
 		this.renderer.setSize( this.width, this.height );
 	}
-	setControl() {
+	setControls() {
 		let controls = new THREE.OrbitControls( this.camera, this.renderer.domElement );
 		controls.enableRotate = false;
-		controls.enableDamping = true;
+		controls.enableDamping = false;
 		controls.dampingFactor = 1;
-
-		return controls;
+		// return null;
+		return [controls];
 	}
 	setUI(){
 		super.setUI();
@@ -67,8 +67,8 @@ function groundPlane(){
 	return plane;
 }
 function groundGird() {
-	var size = 10;
-	var divisions = 20;
+	var size = 100;
+	var divisions = 100;
 
 	var gridHelper = new THREE.GridHelper( size, divisions );
 	gridHelper.rotateX(90 * Math.PI / 180);
@@ -76,12 +76,16 @@ function groundGird() {
 }
 function moveToSamePlane(group){
 	let stantard = group.children[0];
+	let inverse = new THREE.Matrix4();
+	inverse.getInverse(stantard.matrix);
+
 	let normal = computeFaceNormals(stantard.geometry.faces[0], stantard.geometry.vertices);
+	normal.applyEuler(stantard.rotation);
+
 	const axisZ = new THREE.Vector3(0, 0, 1);
-	let pivot = normal.clone().cross( axisZ ).normalize();
+	let pivot = axisZ.clone().cross( normal ).normalize();
 
 	let rotate = new THREE.Matrix4();
-	rotate.makeRotationAxis (pivot, normal.angleTo(axisZ) );
-	// rotate.getInverse(stantard.matrix)
+	rotate.makeRotationAxis (pivot, -1 * normal.angleTo(axisZ) );
 	group.applyMatrix( rotate );
 }
