@@ -10,7 +10,6 @@ export default class ObjectView extends GLRenderTemplate {
 		super();
 		this.selectableObjects = [];
 		this.selectControl = this.setSelectControl();
-		this.model = undefined;
 	}
 	// inhirtance method 
 	setCamera() {
@@ -20,7 +19,6 @@ export default class ObjectView extends GLRenderTemplate {
 		return camera;
 	}
 	loadProps() {
-		window.scene = this.scene;
 		loadPredefined(this.scene).onObjectFileLoaded( geometry =>{
 			this.handleLoadObject(geometry);
 		});
@@ -63,7 +61,6 @@ export default class ObjectView extends GLRenderTemplate {
 		this.gui.add(send, 'send');
 
 	}
-
 	// not inhirtance method
 	setSelectControl() {
 		let control = new SelectControl(this);
@@ -84,7 +81,6 @@ export default class ObjectView extends GLRenderTemplate {
 
 		});
 		this.scene.add( group );
-		console.log(meshSourceMap);
 	}
 	send(){
 		if(this.selectControl.selected.length === 0) return;

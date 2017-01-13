@@ -1,16 +1,21 @@
+import 'Control/DragControls';
 import GLRenderTemplate from './GLRenderTemplate';
-import {notification} from 'lib/Notification';
 import {computeFaceNormals} from 'lib/util';
+import {notification} from 'lib/Notification';
 
 export default class UnFoldView extends GLRenderTemplate {
 	constructor(){
+		
 		super();
 		notification.addEventListener('send', this.receive.bind(this) );
-	}
-	setCamera() {
-		let camera = new THREE.OrthographicCamera( -100, 100,	100,	-100, -100, 100 );
+				window.scene = this.scene;
 
-		camera.position.z = 5;
+	}
+	// inhirtance method 
+	setCamera() {
+		let camera = new THREE.OrthographicCamera( -100, 100,	100, -100, 0.1, 100 );
+
+		camera.position.z = 50;
 	
 		camera.name = 'camera';
 		this.scene.add(camera);
@@ -31,12 +36,15 @@ export default class UnFoldView extends GLRenderTemplate {
 		this.renderer.setSize( this.width, this.height );
 	}
 	setControls() {
-		let controls = new THREE.OrbitControls( this.camera, this.renderer.domElement );
-		controls.enableRotate = false;
-		controls.enableDamping = false;
-		controls.dampingFactor = 1;
-		// return null;
-		return [controls];
+		let orbit = new THREE.OrbitControls( this.camera, this.renderer.domElement );
+		orbit.enableRotate = false;
+		this.selectableObjects = [];
+
+		this.drag = new THREE.DragControls(this.selectableObjects, this.camera, this.renderer.domElement);
+		this.drag.addEventListener( 'dragstart', ()=> { this.drag.enabled = false; } );
+		this.drag.addEventListener( 'dragend', ()=> { this.drag.enabled = true; } );
+
+		return [orbit];
 	}
 	setUI(){
 		super.setUI();
@@ -49,9 +57,11 @@ export default class UnFoldView extends GLRenderTemplate {
 			right: '50%'
 		});
 	}
+	// not inhirtance method 
 	receive( event ) {
 		let group = event.message;
 		moveToSamePlane(group);
+		this.selectableObjects.push( group );
 
 		this.scene.add(group);
 	}

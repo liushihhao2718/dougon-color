@@ -41,8 +41,6 @@ export default class SelectControl{
 		let orange = new THREE.Color('orange');
 		intersect.object.material.color = mixColor(orange, slot.keepedColor);
 	}
-
-	
 }
 function mixColor(color1, color2){
 	let proportion = 0.8;
